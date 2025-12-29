@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Ultimate Screen Tool</title>
+    <style>
+        :root {
+            --bg-ui: rgba(15, 15, 15, 0.95);
+            --border-ui: rgba(255, 255, 255, 0.15);
+            --accent: #007aff;
+            --text: #eee;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #000;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            cursor: none;
+        }
+
+        /* UI Overlay */
+        #ui-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-ui);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            padding: 6px 12px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--border-ui);
+            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s ease;
+            z-index: 2000;
+            user-select: none;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+            opacity: 1;
+            max-width: 95vw;
+        }
+
+        body.hide-ui #ui-container { 
+            opacity: 0; 
+            pointer-events: none; 
+            transform: translateX(-50%) translateY(-15px); 
+        }
+        
+        #ui-container:hover { 
+            opacity: 1 !important; 
+            pointer-events: auto; 
+            transform: translateX(-50%) translateY(0); 
+        }
+
+        .dropdown { 
+            position: relative; 
+            display: inline-block; 
+            padding-bottom: 10px; /* Buffer zone to keep dropdown open */
+            margin-bottom: -10px;
+        }
+
+        .drop-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 6px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .drop-btn:hover { background: rgba(255, 255, 255, 0.18); }
+        .drop-btn::after { content: '▾'; font-size: 9px; opacity: 0.6; }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-ui);
+            min-width: 170px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            border-radius: 16px;
+            border: 1px solid var(--border-ui);
+            z-index: 2001;
+            padding: 8px 0;
+            max-height: 75vh;
+            overflow-y: auto;
+            margin-top: 5px; /* Slight gap but bridged by parent padding */
+        }
+
+        .dropdown:hover .dropdown-content { display: block; }
+
+        .dropdown-content button {
+            color: #ccc;
+            padding: 12px 18px;
+            display: block;
+            width: 100%;
+            border: none;
+            background: none;
+            text-align: left;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .dropdown-content button:hover { 
+            background: rgba(255, 255, 255, 0.1); 
+            color: #fff; 
+            padding-left: 24px; 
+        }
+        
+        .dropdown-content button.active { 
+            color: #fff; 
+            font-weight: bold; 
+            background: rgba(255, 255, 255, 0.15); 
+        }
+
+        .swatch-group { display: flex; gap: 8px; padding: 0 4px; }
+        .swatch {
+            width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.2); transition: all 0.2s ease;
+        }
+        .swatch:hover { transform: scale(1.1); border-color: #fff; }
+        .swatch.active { border-color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.5); }
+
+        input[type="color"] {
+            -webkit-appearance: none; border: none; width: 28px; height: 28px;
+            border-radius: 50%; cursor: pointer; background: none; padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch { border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; }
+
+        .divider { width: 1px; height: 24px; background: rgba(255, 255, 255, 0.2); margin: 0 6px; }
+
+        button#fsBtn {
+            background: #fff; color: #000; border: none; padding: 7px 16px;
+            border-radius: 20px; cursor: pointer; font-size: 10px; font-weight: 800; text-transform: uppercase;
+        }
+
+        #instruction {
+            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.3); font-size: 11px; pointer-events: none;
+            text-align: center; line-height: 1.5; transition: opacity 0.4s;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        body.hide-ui #instruction { opacity: 0; }
+
+        @media (max-width: 600px) {
+            #ui-container { padding: 6px 10px; gap: 5px; top: 10px; }
+            .drop-btn { font-size: 9px; padding: 5px 10px; }
+            .swatch { width: 24px; height: 24px; }
+        }
+    </style>
+</head>
+<body id="mainBody">
+
+    <canvas id="colorCanvas"></canvas>
+
+    <div id="ui-container">
+        <div class="swatch-group">
+            <div class="swatch active" style="background: #000000;" onclick="setMode('color', '#000000', this)"></div>
+            <div class="swatch" style="background: #ffffff;" onclick="setMode('color', '#ffffff', this)"></div>
+            <input type="color" id="customPicker" oninput="setMode('color', this.value)" title="Custom Color">
+        </div>
+        
+        <div class="divider"></div>
+
+        <div class="dropdown">
+            <button class="drop-btn">Windows</button>
+            <div class="dropdown-content">
+                <button onclick="setMode('win_10_upd', null, this)">Windows 10 Update</button>
+                <button onclick="setMode('win_xp_upd', null, this)">Windows XP Update</button>
+                <button onclick="setMode('win_10_bsod', null, this)">Windows 10 BSOD</button>
+                <button onclick="setMode('win_xp_bsod', null, this)">Windows XP BSOD</button>
+                <button onclick="setMode('win_bios', null, this)">BIOS Boot</button>
+            </div>
+        </div>
+
+        <div class="dropdown">
+            <button class="drop-btn">Apple</button>
+            <div class="dropdown-content">
+                <button onclick="setMode('macos_drift', null, this)">macOS Drift</button>
+                <button onclick="setMode('macos_hello', null, this)">macOS Hello</button>
+                <button onclick="setMode('macos_panic', null, this)">Kernel Panic</button>
+                <button onclick="setMode('ios_update', null, this)">iOS Update</button>
+                <button onclick="setMode('ios_disabled', null, this)">iPhone Disabled</button>
+            </div>
+        </div>
+
+        <div class="dropdown">
+            <button class="drop-btn">Pranks</button>
+            <div class="dropdown-content">
+                <button onclick="setMode('broken_screen', null, this)">Broken Screen</button>
+                <button onclick="setMode('white_noise', null, this)">White Noise</button>
+                <button onclick="setMode('radar', null, this)">Radar Screen</button>
+                <button onclick="setMode('hacker', null, this)">Hacker Typer</button>
+                <button onclick="setMode('no_signal', null, this)">No Signal</button>
+            </div>
+        </div>
+
+        <div class="dropdown">
+            <button class="drop-btn">More</button>
+            <div class="dropdown-content">
+                <button onclick="setMode('ubuntu', null, this)">Ubuntu 22.04</button>
+                <button onclick="setMode('chromeos', null, this)">Chrome OS</button>
+                <button onclick="setMode('matrix', null, this)">Matrix Rain</button>
+                <button onclick="setMode('dvd', null, this)">DVD Bouncing</button>
+                <button onclick="setMode('flip_clock', null, this)">Flip Clock</button>
+                <button onclick="setMode('quotes', null, this)">Quotes</button>
+            </div>
+        </div>
+        
+        <div class="divider"></div>
+        <button id="fsBtn" onclick="toggleFullscreen()">FS</button>
+    </div>
+
+    <div id="instruction">
+        <b>F</b> Fullscreen • <b>Space</b> Random • <b>Esc</b> Exit<br>
+        UI hides after 3s of inactivity
+    </div>
+
+    <script>
+        const canvas = document.getElementById('colorCanvas');
+        const ctx = canvas.getContext('2d');
+        const body = document.getElementById('mainBody');
+        
+        let currentMode = 'color';
+        let currentColor = '#000000';
+        let uiTimeout, frame = 0, progress = 0;
+        
+        // --- Assets ---
+        const imgWin = new Image(); 
+        imgWin.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Windows_logo_-_2021.svg/512px-Windows_logo_-_2021.svg.png';
+        const imgApple = new Image(); 
+        imgApple.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/256px-Apple_logo_black.svg.png';
+        const imgAndroid = new Image(); 
+        imgAndroid.src = 'https://upload.wikimedia.org/wikipedia/commons/6/64/Android_logo_2019_%28stacked%29.svg';
+        [imgWin, imgApple, imgAndroid].forEach(img => img.crossOrigin = 'anonymous');
+
+        // --- Mode Data ---
+        let particles = [], matrixChars = [], hackerLines = [], crackLines = [];
+        let dvdPos = { x: 100, y: 100, vx: 3, vy: 3, color: '#fff' };
+        let currentQuote = "";
+
+        const quotes = [
+            "Reality is merely an illusion, albeit a very persistent one.",
+            "The only way to do great work is to love what you do.",
+            "Error 404: Sleep not found.",
+            "I'm not lazy, I'm just on energy saving mode.",
+            "Everything is fine. (It is not fine.)",
+            "Be the person your dog thinks you are."
+        ];
+
+        function initMode() {
+            progress = 0; frame = 0;
+            if (currentMode === 'macos_drift') {
+                particles = Array.from({length: 80}, () => ({ 
+                    x: Math.random()*canvas.width, 
+                    y: Math.random()*canvas.height, 
+                    vx: (Math.random()-0.5)*2, 
+                    vy: (Math.random()-0.5)*2, 
+                    size: Math.random()*3+1, 
+                    hue: Math.random()*360 
+                }));
+            }
+            if (currentMode === 'matrix') {
+                const cols = Math.floor(canvas.width / 20);
+                matrixChars = Array(cols).fill(0).map(() => Math.random() * -100);
+            }
+            if (currentMode === 'hacker') {
+                hackerLines = [];
+            }
+            if (currentMode === 'broken_screen') {
+                crackLines = Array.from({length: 12}, () => ({ 
+                    x: Math.random()*canvas.width, 
+                    y: Math.random()*canvas.height, 
+                    angle: Math.random()*Math.PI*2, 
+                    length: 100+Math.random()*400 
+                }));
+            }
+            if (currentMode === 'quotes') {
+                currentQuote = quotes[Math.floor(Math.random()*quotes.length)];
+            }
+        }
+
+        // --- Helper: Draw Centered Logo with White Filter ---
+        function drawWhiteLogo(img, size, yOffset = 0) {
+            if (img.complete) {
+                ctx.save();
+                ctx.filter = 'brightness(0) invert(1)';
+                ctx.drawImage(img, canvas.width/2 - size/2, canvas.height/2 - size/2 + yOffset, size, size);
+                ctx.restore();
+            }
+        }
+
+        // --- Drawers ---
+
+        function drawWinSpinner(x, y, radius) {
+            const dotCount = 6;
+            for (let i = 0; i < dotCount; i++) {
+                const angle = (frame / 20) + (i * (Math.PI * 2 / 12));
+                const dx = x + Math.cos(angle) * radius;
+                const dy = y + Math.sin(angle) * radius;
+                const size = 3 + (i * 0.8);
+                ctx.beginPath();
+                ctx.arc(dx, dy, size, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, ' + (i / dotCount) + ')';
+                ctx.fill();
+            }
+        }
+
+        function drawWinXPUpdate() {
+            ctx.fillStyle = '#003399'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = '#fff'; ctx.font = '24px "Tahoma", sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText("Windows is updating your computer...", canvas.width/2, canvas.height/2 - 50);
+            ctx.strokeStyle = '#fff'; ctx.strokeRect(canvas.width/2 - 150, canvas.height/2, 300, 25);
+            ctx.fillStyle = '#33cc33'; ctx.fillRect(canvas.width/2 - 148, canvas.height/2 + 2, (progress % 100 / 100) * 296, 21);
+        }
+
+        function drawBrokenScreen() {
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1;
+            crackLines.forEach(c => {
+                ctx.beginPath(); ctx.moveTo(c.x, c.y);
+                const ex = c.x + Math.cos(c.angle) * c.length; const ey = c.y + Math.sin(c.angle) * c.length;
+                ctx.lineTo(ex, ey); ctx.stroke();
+                for(let i=0; i<3; i++) {
+                    ctx.beginPath(); ctx.moveTo(c.x + (ex-c.x)*0.5, c.y + (ey-c.y)*0.5);
+                    ctx.lineTo(c.x + Math.cos(c.angle+0.5)*c.length*0.3, c.y + Math.sin(c.angle+0.5)*c.length*0.3);
+                    ctx.stroke();
+                }
+            });
+            for(let i=0; i<5; i++) {
+                ctx.fillStyle = `rgba(${Math.random()*255},${Math.random()*255},${Math.random()*255},0.3)`;
+                ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 100, 2);
+            }
+        }
+
+        // --- Core Loop ---
+
+        function animate() {
+            frame++; progress += 0.02;
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            ctx.textAlign = 'left';
+
+            switch(currentMode) {
+                case 'color': 
+                    ctx.fillStyle = currentColor; ctx.fillRect(0,0,canvas.width,canvas.height); 
+                    break;
+                case 'win_10_upd':
+                    ctx.fillStyle = '#0067b8'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    drawWhiteLogo(imgWin, 100, -100);
+                    drawWinSpinner(canvas.width/2, canvas.height/2 + 10, 35);
+                    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '22px Segoe UI';
+                    ctx.fillText(`Working on updates ${Math.min(100, Math.floor(progress*10)) % 101}%`, canvas.width/2, canvas.height/2 + 80);
+                    break;
+                case 'win_xp_upd': drawWinXPUpdate(); break;
+                case 'win_10_bsod':
+                    ctx.fillStyle = '#0078d7'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    ctx.fillStyle = '#fff'; ctx.font = '100px Segoe UI'; ctx.fillText(':(', 100, 200);
+                    ctx.font = '24px Segoe UI'; ctx.fillText('Your PC ran into a problem...', 100, 300);
+                    break;
+                case 'win_xp_bsod':
+                    ctx.fillStyle = '#0000aa'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    ctx.fillStyle = '#fff'; ctx.font = '16px monospace'; 
+                    ["A problem has been detected...", "STOP: 0x000000D1", "Check hardware..."].forEach((l, i) => ctx.fillText(l, 40, 60 + i*22));
+                    break;
+                case 'win_bios':
+                    ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.fillStyle='#ccc'; ctx.font='14px monospace';
+                    ["BIOS Ver 1.0.4", "Memory Check: 16384MB OK", "Booting..."].forEach((l,i) => { if(frame>i*20) ctx.fillText(l, 40, 40+i*20); });
+                    break;
+                case 'macos_drift':
+                    ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    particles.forEach(p => { p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>canvas.width) p.vx*=-1; if(p.y<0||p.y>canvas.height) p.vy*=-1; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fillStyle=`hsla(${p.hue+(frame%360)},70%,70%,0.8)`; ctx.fill(); });
+                    break;
+                case 'macos_hello': 
+                    ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height); 
+                    ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.font='italic bold 100px serif'; ctx.fillText('hello', canvas.width/2, canvas.height/2); 
+                    break;
+                case 'macos_panic':
+                    ctx.fillStyle='rgba(0,0,0,0.85)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='bold 18px sans-serif'; ctx.fillText("You need to restart your computer...", canvas.width/2, canvas.height/2);
+                    break;
+                case 'ios_update':
+                    ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    drawWhiteLogo(imgApple, 80, -60);
+                    ctx.fillStyle='#333'; ctx.fillRect(canvas.width/2-75, canvas.height/2+50, 150, 3);
+                    ctx.fillStyle='#fff'; ctx.fillRect(canvas.width/2-75, canvas.height/2+50, (progress%100/100)*150, 3);
+                    break;
+                case 'ios_disabled':
+                    ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='30px sans-serif'; ctx.fillText("iPhone is disabled", canvas.width/2, canvas.height/2);
+                    break;
+                case 'broken_screen': drawBrokenScreen(); break;
+                case 'white_noise':
+                    const id = ctx.createImageData(canvas.width, canvas.height);
+                    for(let i=0; i<id.data.length; i+=4) { const v = Math.random()*255; id.data[i]=id.data[i+1]=id.data[i+2]=v; id.data[i+3]=255; }
+                    ctx.putImageData(id, 0, 0); break;
+                case 'radar':
+                    ctx.fillStyle = '#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    const cx = canvas.width/2, cy = canvas.height/2, r = Math.min(cx, cy) * 0.8;
+                    const angle = (frame / 50) % (Math.PI*2);
+                    ctx.strokeStyle = '#00ff00'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(angle)*r, cy + Math.sin(angle)*r); ctx.stroke();
+                    break;
+                case 'hacker':
+                    ctx.fillStyle = '#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    ctx.fillStyle = '#0f0'; ctx.font = '14px monospace'; 
+                    if (frame % 5 === 0) {
+                        hackerLines.push("0x" + Math.random().toString(16).slice(2,10).toUpperCase() + " PROCESSING...");
+                        if (hackerLines.length > 30) hackerLines.shift();
+                    }
+                    hackerLines.forEach((l, i) => ctx.fillText(l, 20, 30 + i*20));
+                    break;
+                case 'no_signal':
+                    const cols = ['#fff', '#ff0', '#0ff', '#0f0', '#f0f', '#f00', '#00f'];
+                    cols.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(i*(canvas.width/7), 0, canvas.width/7, canvas.height); });
+                    break;
+                case 'ubuntu':
+                    ctx.fillStyle = '#300a24'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText("ubuntu 22.04", canvas.width/2, canvas.height - 100);
+                    break;
+                case 'chromeos':
+                    ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    ctx.fillStyle='#4285F4'; ctx.textAlign='center'; ctx.font='bold 40px sans-serif'; ctx.fillText("chromeOS", canvas.width/2, canvas.height/2);
+                    break;
+                case 'matrix':
+                    ctx.fillStyle='rgba(0,0,0,0.05)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    ctx.fillStyle='#0f0'; ctx.font='18px monospace';
+                    matrixChars.forEach((y, i) => { ctx.fillText(String.fromCharCode(Math.random()*128), i*20, y); if(y>canvas.height && Math.random()>0.975) matrixChars[i]=0; else matrixChars[i]+=20; });
+                    break;
+                case 'dvd': 
+                    ctx.fillStyle = '#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    dvdPos.x += dvdPos.vx; dvdPos.y += dvdPos.vy;
+                    if (dvdPos.x <= 0 || dvdPos.x + 100 >= canvas.width) dvdPos.vx *= -1;
+                    if (dvdPos.y <= 0 || dvdPos.y + 50 >= canvas.height) dvdPos.vy *= -1;
+                    ctx.fillStyle = '#fff'; ctx.fillRect(dvdPos.x, dvdPos.y, 100, 50);
+                    break;
+                case 'flip_clock':
+                    ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='bold 80px monospace';
+                    ctx.fillText(new Date().toLocaleTimeString(), canvas.width/2, canvas.height/2);
+                    break;
+                case 'quotes':
+                    ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='italic 24px serif';
+                    ctx.fillText('"' + currentQuote + '"', canvas.width/2, canvas.height/2);
+                    break;
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function setMode(mode, val, el) {
+            currentMode = mode;
+            if (val) currentColor = val;
+            initMode();
+            document.querySelectorAll('.swatch, .dropdown-content button').forEach(i => i.classList.remove('active'));
+            if (el) el.classList.add('active');
+            resetUITimer();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        }
+
+        function resetUITimer() {
+            body.classList.remove('hide-ui');
+            canvas.style.cursor = 'default';
+            clearTimeout(uiTimeout);
+            uiTimeout = setTimeout(() => {
+                body.classList.add('hide-ui');
+                canvas.style.cursor = 'none';
+            }, 3000);
+        }
+
+        window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; initMode(); });
+        window.addEventListener('mousemove', resetUITimer);
+        window.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'f') toggleFullscreen();
+            if (e.code === 'Space') setMode('color', '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'));
+        });
+
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        animate(); resetUITimer();
+    </script>
+</body>
+</html>
