@@ -1,0 +1,174 @@
+:root {
+    --bg-ui: rgba(15, 15, 15, 0.95);
+    --border-ui: rgba(255, 255, 255, 0.15);
+    --accent: #007aff;
+    --text: #eee;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #000;
+}
+
+canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    cursor: none;
+}
+
+/* UI Overlay */
+#ui-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-ui);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    padding: 6px 12px;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border-ui);
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s ease;
+    z-index: 2000;
+    user-select: none;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+    opacity: 1;
+    max-width: 95vw;
+}
+
+body.hide-ui #ui-container { 
+    opacity: 0; 
+    pointer-events: none; 
+    transform: translateX(-50%) translateY(-15px); 
+}
+
+#ui-container:hover { 
+    opacity: 1 !important; 
+    pointer-events: auto; 
+    transform: translateX(-50%) translateY(0); 
+}
+
+.dropdown { 
+    position: relative; 
+    display: inline-block; 
+    padding-bottom: 8px; /* Buffer zone to keep dropdown open */
+    margin-bottom: -8px;
+}
+
+.drop-btn {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+}
+
+.drop-btn:hover { background: rgba(255, 255, 255, 0.18); }
+.drop-btn::after { content: '▾'; font-size: 9px; opacity: 0.6; }
+
+.dropdown-content {
+    opacity: 0;
+    visibility: hidden;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-5px);
+    background: var(--bg-ui);
+    min-width: 170px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    border-radius: 16px;
+    border: 1px solid var(--border-ui);
+    z-index: 2001;
+    padding: 8px 0;
+    max-height: 75vh;
+    overflow-y: auto;
+    margin-top: 0;
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+}
+
+.dropdown-content.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+}
+
+.dropdown-content button {
+    color: #ccc;
+    padding: 12px 18px;
+    display: block;
+    width: 100%;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dropdown-content button:hover { 
+    background: rgba(255, 255, 255, 0.1); 
+    color: #fff; 
+    padding-left: 24px; 
+}
+
+.dropdown-content button.active { 
+    color: #fff; 
+    font-weight: bold; 
+    background: rgba(255, 255, 255, 0.15); 
+}
+
+.swatch-group { display: flex; gap: 8px; padding: 0 4px; }
+.swatch {
+    width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.2); transition: all 0.2s ease;
+}
+.swatch:hover { transform: scale(1.1); border-color: #fff; }
+.swatch.active { border-color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.5); }
+
+input[type="color"] {
+    -webkit-appearance: none; border: none; width: 28px; height: 28px;
+    border-radius: 50%; cursor: pointer; background: none; padding: 0;
+}
+input[type="color"]::-webkit-color-swatch { border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; }
+
+.divider { width: 1px; height: 24px; background: rgba(255, 255, 255, 0.2); margin: 0 6px; }
+
+button#fsBtn {
+    background: #fff; color: #000; border: none; padding: 7px 16px;
+    border-radius: 20px; cursor: pointer; font-size: 10px; font-weight: 800; text-transform: uppercase;
+}
+
+#instruction {
+    position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.3); font-size: 11px; pointer-events: none;
+    text-align: center; line-height: 1.5; transition: opacity 0.4s;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+body.hide-ui #instruction { opacity: 0; }
+
+@media (max-width: 600px) {
+    #ui-container { padding: 6px 10px; gap: 5px; top: 10px; }
+    .drop-btn { font-size: 9px; padding: 5px 10px; }
+    .swatch { width: 24px; height: 24px; }
+}
+
