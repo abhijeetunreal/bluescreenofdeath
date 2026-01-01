@@ -33,6 +33,14 @@ export function renderWindowsMode(mode, ctx, canvas) {
             // Main section positioned at 40% from top (matching reference)
             const mainSectionY = canvas.height * 0.4;
             
+            // Windows logo - positioned above spinner
+            if (imgWin.complete && imgWin.naturalWidth > 0) {
+                const logoSize = 80;
+                const logoX = canvas.width / 2 - logoSize / 2;
+                const logoY = mainSectionY - 120;
+                ctx.drawImage(imgWin, logoX, logoY, logoSize, logoSize);
+            }
+            
             // Improved spinner with 6 dots - positioned above text
             const loaderSize = 40;
             drawWin10Spinner(ctx, canvas.width/2, mainSectionY - loaderSize/2 - 20, loaderSize/2, frame);

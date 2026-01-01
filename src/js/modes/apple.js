@@ -2,7 +2,7 @@
 
 import * as state from '../core/state.js';
 import { drawWhiteLogo, drawiOSProgressBar, drawMacOSProgressBar } from '../utils/drawing.js';
-import { imgApple } from '../utils/assets.js';
+import { imgApple, imgAppleWhite } from '../utils/assets.js';
 import { loadTemplate } from '../utils/template-loader.js';
 import { renderTemplateToCanvas } from '../utils/template-renderer.js';
 
@@ -61,8 +61,15 @@ export function renderAppleMode(mode, ctx, canvas) {
             const template = templateCache.get(mode);
             renderTemplateToCanvas(template, ctx, canvas, {});
             
-            // Apple logo - larger and better positioned
-            drawWhiteLogo(ctx, imgApple, canvas, 120, -100);
+            // Apple logo - try white version first, fallback to filtered black version
+            if (imgAppleWhite.complete && imgAppleWhite.naturalWidth > 0) {
+                const logoSize = 120;
+                const logoX = canvas.width / 2 - logoSize / 2;
+                const logoY = canvas.height / 2 - logoSize / 2 - 100;
+                ctx.drawImage(imgAppleWhite, logoX, logoY, logoSize, logoSize);
+            } else if (imgApple.complete && imgApple.naturalWidth > 0) {
+                drawWhiteLogo(ctx, imgApple, canvas, 120, -100);
+            }
             
             // Progress bar - wider and more visible
             const barWidth = 250;
@@ -126,8 +133,15 @@ export function renderAppleMode(mode, ctx, canvas) {
             const template = templateCache.get(mode);
             renderTemplateToCanvas(template, ctx, canvas, {});
             
-            // Apple logo - larger
-            drawWhiteLogo(ctx, imgApple, canvas, 120, -80);
+            // Apple logo - try white version first, fallback to filtered black version
+            if (imgAppleWhite.complete && imgAppleWhite.naturalWidth > 0) {
+                const logoSize = 120;
+                const logoX = canvas.width / 2 - logoSize / 2;
+                const logoY = canvas.height / 2 - logoSize / 2 - 80;
+                ctx.drawImage(imgAppleWhite, logoX, logoY, logoSize, logoSize);
+            } else if (imgApple.complete && imgApple.naturalWidth > 0) {
+                drawWhiteLogo(ctx, imgApple, canvas, 120, -80);
+            }
             
             // Progress bar with rounded corners - wider
             const barWidth = 250;

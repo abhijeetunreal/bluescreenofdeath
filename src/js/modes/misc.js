@@ -1,7 +1,7 @@
 // Miscellaneous modes
 
 import * as state from '../core/state.js';
-import { quotes } from '../utils/assets.js';
+import { quotes, imgChrome, imgUbuntu } from '../utils/assets.js';
 import { loadTemplate } from '../utils/template-loader.js';
 import { renderTemplateToCanvas } from '../utils/template-renderer.js';
 
@@ -34,41 +34,68 @@ export function renderMiscMode(mode, ctx, canvas) {
             // Render template (preloaded during init)
             const ubuntuTemplate = templateCache.get(mode);
             renderTemplateToCanvas(ubuntuTemplate, ctx, canvas, {});
+            
+            // Ubuntu logo - positioned well above text to avoid overlap
+            if (imgUbuntu.complete && imgUbuntu.naturalWidth > 0) {
+                ctx.textAlign = 'center';
+                const logoSize = 120;
+                const logoX = canvas.width / 2 - logoSize / 2;
+                // Position logo at 35% from top to ensure no overlap with text at 50%
+                const logoY = canvas.height * 0.35 - logoSize / 2;
+                ctx.drawImage(imgUbuntu, logoX, logoY, logoSize, logoSize);
+            }
             break;
         case 'chromeos':
             // Render template (preloaded during init)
             const chromeosTemplate = templateCache.get(mode);
-            renderTemplateToCanvas(chromeosTemplate, ctx, canvas, {});
+            // Realistic progress calculation - simulates average PC update timing
+            // At 60fps: 3600 frames = 60 seconds to reach 100% (realistic for average PC)
+            // Progress is non-linear: faster at start, slower in middle, speeds up near end
+            const cycleFrames = 3600; // 60 seconds at 60fps
+            const rawProgress = (frame % cycleFrames) / cycleFrames;
+            // Apply easing curve for more realistic progress (ease-in-out with slight variation)
+            // Fast start (0-30%), slow middle (30-70%), faster end (70-100%)
+            let slowProgress;
+            if (rawProgress < 0.3) {
+                // Fast initial progress
+                slowProgress = rawProgress * 1.2;
+            } else if (rawProgress < 0.7) {
+                // Slower middle section
+                slowProgress = 0.36 + (rawProgress - 0.3) * 0.85;
+            } else {
+                // Faster final section
+                slowProgress = 0.7 + (rawProgress - 0.7) * 1.5;
+            }
+            slowProgress = Math.min(1, slowProgress);
+            const percentComplete = Math.min(100, Math.floor(slowProgress * 100));
+            renderTemplateToCanvas(chromeosTemplate, ctx, canvas, { percentComplete });
             
-            // Add Chrome logo colors (simplified) - dynamic content
+            // Draw official Chrome logo - positioned above text
             ctx.textAlign = 'center';
-            const logoSize = 60;
-            const logoX = canvas.width/2 - logoSize/2;
-            const logoY = canvas.height/2 - 100;
-            const logoCenterX = logoX + logoSize/2;
-            const logoCenterY = logoY + logoSize/2;
+            const logoSize = 80;
+            const logoX = canvas.width / 2 - logoSize / 2;
+            const logoY = canvas.height * 0.35 - 40 - logoSize / 2;
             
-            // Draw simplified Chrome logo (red, green, blue segments)
-            ctx.fillStyle = '#EA4335';
-            ctx.beginPath();
-            ctx.moveTo(logoCenterX, logoCenterY);
-            ctx.arc(logoCenterX, logoCenterY, logoSize/2, 0, Math.PI * 2 / 3);
-            ctx.lineTo(logoCenterX, logoCenterY);
-            ctx.fill();
+            // Draw official Chrome logo image
+            if (imgChrome.complete && imgChrome.naturalWidth > 0) {
+                ctx.drawImage(imgChrome, logoX, logoY, logoSize, logoSize);
+            }
             
-            ctx.fillStyle = '#34A853';
-            ctx.beginPath();
-            ctx.moveTo(logoCenterX, logoCenterY);
-            ctx.arc(logoCenterX, logoCenterY, logoSize/2, Math.PI * 2 / 3, Math.PI * 4 / 3);
-            ctx.lineTo(logoCenterX, logoCenterY);
-            ctx.fill();
+            // Draw progress bar below text
+            const progressBarY = canvas.height * 0.35 + 250;
+            const progressBarWidth = 400;
+            const progressBarHeight = 6;
+            const progressBarX = canvas.width / 2 - progressBarWidth / 2;
+            const progressPercent = slowProgress;
             
+            // Progress bar background (light gray)
+            ctx.fillStyle = '#E8EAED';
+            ctx.fillRect(progressBarX, progressBarY, progressBarWidth, progressBarHeight);
+            
+            // Progress bar fill (Chrome blue)
+            const fillWidth = progressPercent * progressBarWidth;
             ctx.fillStyle = '#4285F4';
-            ctx.beginPath();
-            ctx.moveTo(logoCenterX, logoCenterY);
-            ctx.arc(logoCenterX, logoCenterY, logoSize/2, Math.PI * 4 / 3, Math.PI * 2);
-            ctx.lineTo(logoCenterX, logoCenterY);
-            ctx.fill();
+            ctx.fillRect(progressBarX, progressBarY, fillWidth, progressBarHeight);
             break;
         case 'matrix':
             // Matrix rain effect - darker fade

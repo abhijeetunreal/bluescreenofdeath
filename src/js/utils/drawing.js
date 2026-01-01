@@ -1,8 +1,11 @@
 // Drawing helper functions
 
 export function drawWhiteLogo(ctx, img, canvas, size, yOffset = 0) {
-    if (img.complete) {
+    // Check if image is loaded and has valid dimensions
+    if (img.complete && img.naturalWidth > 0) {
         ctx.save();
+        // Use composite operation for better quality white logo
+        ctx.globalCompositeOperation = 'source-over';
         ctx.filter = 'brightness(0) invert(1)';
         ctx.drawImage(img, canvas.width/2 - size/2, canvas.height/2 - size/2 + yOffset, size, size);
         ctx.restore();
