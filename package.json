@@ -1,0 +1,14 @@
+{
+  "name": "bluescreenofdeath",
+  "version": "1.0.0",
+  "description": "The Ultimate Screen Tool",
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/css/input.css -o ./styles.css --minify",
+    "watch:css": "tailwindcss -i ./src/css/input.css -o ./styles.css --watch",
+    "postinstall": "npm run build:css"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.1"
+  }
+}
+

@@ -24,43 +24,47 @@ export function drawWinSpinner(ctx, x, y, radius, frame) {
 }
 
 export function drawWinXPUpdate(ctx, canvas, progress) {
+    // Windows XP update screen blue
     ctx.fillStyle = '#003399'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Stage messages that change based on progress
+    // Stage messages that change based on progress - more realistic
     let stageMessage = "Preparing to install";
     let detailMessage = "Please wait...";
     const progressPercent = (progress % 100) / 100;
     
-    if (progressPercent < 0.3) {
+    if (progressPercent < 0.25) {
         stageMessage = "Preparing to install";
         detailMessage = "Gathering required information...";
-    } else if (progressPercent < 0.7) {
+    } else if (progressPercent < 0.5) {
         stageMessage = "Installing updates";
         detailMessage = "This may take several minutes...";
+    } else if (progressPercent < 0.85) {
+        stageMessage = "Installing updates";
+        detailMessage = "Please wait while Windows configures your computer...";
     } else {
         stageMessage = "Configuring settings";
         detailMessage = "Almost done...";
     }
     
     ctx.fillStyle = '#fff'; 
-    ctx.font = 'bold 26px "Tahoma", sans-serif'; 
+    ctx.font = 'bold 28px "Tahoma", sans-serif'; 
     ctx.textAlign = 'center';
-    ctx.fillText(stageMessage, canvas.width/2, canvas.height/2 - 80);
+    ctx.fillText(stageMessage, canvas.width/2, canvas.height/2 - 90);
+    
+    ctx.font = '22px "Tahoma", sans-serif';
+    ctx.fillText("Windows is updating your computer", canvas.width/2, canvas.height/2 - 50);
     
     ctx.font = '20px "Tahoma", sans-serif';
-    ctx.fillText("Windows is updating your computer", canvas.width/2, canvas.height/2 - 40);
+    ctx.fillText(detailMessage, canvas.width/2, canvas.height/2 - 15);
     
-    ctx.font = '18px "Tahoma", sans-serif';
-    ctx.fillText(detailMessage, canvas.width/2, canvas.height/2 - 10);
-    
-    // Progress bar with XP styling
-    const barWidth = 400;
-    const barHeight = 28;
+    // Progress bar with XP styling - more accurate
+    const barWidth = 450;
+    const barHeight = 30;
     const barX = canvas.width/2 - barWidth/2;
-    const barY = canvas.height/2 + 20;
+    const barY = canvas.height/2 + 25;
     
-    // Outer border (white)
+    // Outer border (white) - thicker for XP style
     ctx.strokeStyle = '#fff'; 
     ctx.lineWidth = 2;
     ctx.strokeRect(barX, barY, barWidth, barHeight);
@@ -70,26 +74,29 @@ export function drawWinXPUpdate(ctx, canvas, progress) {
     ctx.lineWidth = 1;
     ctx.strokeRect(barX + 2, barY + 2, barWidth - 4, barHeight - 4);
     
-    // Progress fill (XP green)
+    // Progress fill (XP green) - brighter green
     const fillWidth = (progressPercent * (barWidth - 6));
     ctx.fillStyle = '#33cc33'; 
     ctx.fillRect(barX + 3, barY + 3, fillWidth, barHeight - 6);
     
-    // Percentage text
+    // Percentage text - larger and bolder
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 18px "Tahoma", sans-serif';
-    ctx.fillText(`${Math.floor(progressPercent * 100)}%`, canvas.width/2, barY + barHeight + 30);
+    ctx.font = 'bold 20px "Tahoma", sans-serif';
+    ctx.fillText(`${Math.floor(progressPercent * 100)}%`, canvas.width/2, barY + barHeight + 35);
     
-    // Warning text
-    ctx.font = '16px "Tahoma", sans-serif';
-    ctx.fillText("Do not turn off your computer", canvas.width/2, barY + barHeight + 60);
+    // Warning text - more prominent
+    ctx.font = '18px "Tahoma", sans-serif';
+    ctx.fillText("Do not turn off your computer", canvas.width/2, barY + barHeight + 65);
 }
 
 export function drawBrokenScreen(ctx, canvas, crackLines) {
+    // Black background
     ctx.fillStyle = '#000'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; 
-    ctx.lineWidth = 1;
+    
+    // Draw main crack lines - more realistic
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)'; 
+    ctx.lineWidth = 2;
     crackLines.forEach(c => {
         ctx.beginPath(); 
         ctx.moveTo(c.x, c.y);
@@ -97,16 +104,31 @@ export function drawBrokenScreen(ctx, canvas, crackLines) {
         const ey = c.y + Math.sin(c.angle) * c.length;
         ctx.lineTo(ex, ey); 
         ctx.stroke();
-        for(let i=0; i<3; i++) {
-            ctx.beginPath(); 
-            ctx.moveTo(c.x + (ex-c.x)*0.5, c.y + (ey-c.y)*0.5);
-            ctx.lineTo(c.x + Math.cos(c.angle+0.5)*c.length*0.3, c.y + Math.sin(c.angle+0.5)*c.length*0.3);
+        
+        // Add branching cracks for realism
+        for(let i=0; i<2; i++) {
+            const branchAngle = c.angle + (Math.random() - 0.5) * 0.8;
+            const branchLength = c.length * (0.2 + Math.random() * 0.3);
+            ctx.beginPath();
+            ctx.moveTo(c.x + (ex-c.x)*0.4, c.y + (ey-c.y)*0.4);
+            ctx.lineTo(c.x + Math.cos(branchAngle)*branchLength, c.y + Math.sin(branchAngle)*branchLength);
             ctx.stroke();
         }
     });
-    for(let i=0; i<5; i++) {
-        ctx.fillStyle = `rgba(${Math.random()*255},${Math.random()*255},${Math.random()*255},0.3)`;
-        ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 100, 2);
+    
+    // Add screen damage effects - colored lines
+    for(let i=0; i<8; i++) {
+        const r = Math.random() * 255;
+        const g = Math.random() * 255;
+        const b = Math.random() * 255;
+        ctx.fillStyle = `rgba(${r},${g},${b},0.4)`;
+        ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 80 + Math.random()*40, 2);
+    }
+    
+    // Add small shard effects
+    for(let i=0; i<15; i++) {
+        ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.random()*0.4})`;
+        ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 3, 3);
     }
 }
 
@@ -149,17 +171,52 @@ export function drawQRCodePattern(ctx, x, y, size) {
     }
 }
 
-// Improved Windows 10 spinner with more realistic animation
+// Improved Windows 10 spinner with 6 dots - matches reference implementation
 export function drawWin10Spinner(ctx, x, y, radius, frame) {
-    const dotCount = 5;
-    const baseAngle = (frame / 30) % (Math.PI * 2);
+    const dotCount = 6;
+    // Animation cycle - 4 seconds per full rotation (240 frames at 60fps)
+    const cycleTime = 240;
+    const fps = 60;
+    
+    // Starting angles for each dot (in degrees, converted to radians)
+    const startAngles = [0, 20, 40, 60, 80, 100].map(a => (a * Math.PI) / 180);
+    
+    // Delays for each dot (in seconds, converted to frames)
+    const delays = [0.9, 0.775, 0.65, 0.525, 0.4, 0.275].map(d => d * fps);
     
     for (let i = 0; i < dotCount; i++) {
-        const angle = baseAngle + (i * (Math.PI * 2 / dotCount));
-        const dx = x + Math.cos(angle) * radius;
-        const dy = y + Math.sin(angle) * radius;
-        const opacity = 0.3 + (0.7 * (1 - (i / dotCount)));
-        const size = 4;
+        // Calculate current frame with delay
+        const adjustedFrame = (frame + delays[i]) % cycleTime;
+        const progress = adjustedFrame / cycleTime;
+        
+        // Each dot rotates from its starting angle
+        // The animation goes: start -> +180deg -> +360deg (back to start)
+        let rotation;
+        if (progress < 0.2) {
+            // First 20%: rotate from start to start+180
+            rotation = startAngles[i] + (progress / 0.2) * Math.PI;
+        } else if (progress < 0.6) {
+            // 20-60%: stay at start+180
+            rotation = startAngles[i] + Math.PI;
+        } else {
+            // 60-100%: rotate from start+180 to start+360
+            rotation = startAngles[i] + Math.PI + ((progress - 0.6) / 0.4) * Math.PI;
+        }
+        
+        const dx = x + Math.cos(rotation) * radius;
+        const dy = y + Math.sin(rotation) * radius;
+        
+        // Opacity: fade in/out based on position
+        let opacity;
+        if (progress < 0.2) {
+            opacity = 0.3 + (0.7 * (progress / 0.2));
+        } else if (progress < 0.6) {
+            opacity = 1.0;
+        } else {
+            opacity = 1.0 - (0.7 * ((progress - 0.6) / 0.4));
+        }
+        
+        const size = 5;
         
         ctx.beginPath();
         ctx.arc(dx, dy, size, 0, Math.PI * 2);

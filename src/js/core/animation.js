@@ -12,20 +12,22 @@ import { resetUITimer } from '../ui/ui-timer.js';
 const canvas = getCanvas();
 const ctx = getCtx();
 
-export function initMode() {
+export async function initMode() {
     state.resetProgress();
     state.resetFrame();
     
     const mode = state.getCurrentMode();
     
-    if (mode === 'macos_drift') {
-        initAppleMode(mode, canvas);
-    } else if (mode === 'matrix' || mode === 'quotes') {
-        initMiscMode(mode, canvas);
-    } else if (mode === 'hacker' || mode === 'broken_screen') {
-        initPrankMode(mode, canvas);
+    if (mode === 'macos_drift' || mode.startsWith('macos_') || mode.startsWith('ios_')) {
+        await initAppleMode(mode, canvas);
+    } else if (['ubuntu', 'chromeos', 'matrix', 'dvd', 'flip_clock', 'quotes'].includes(mode)) {
+        await initMiscMode(mode, canvas);
+    } else if (['broken_screen', 'white_noise', 'radar', 'hacker', 'no_signal'].includes(mode)) {
+        await initPrankMode(mode, canvas);
+    } else if (mode.startsWith('win_')) {
+        await initWindowsMode(mode, canvas);
     }
-    // Windows modes and other modes don't need initialization
+    // Other modes don't need initialization
 }
 
 export function animate() {
@@ -53,12 +55,12 @@ export function animate() {
     requestAnimationFrame(animate);
 }
 
-export function setMode(mode, val, el) {
+export async function setMode(mode, val, el) {
     state.setCurrentMode(mode);
     if (val) {
         state.setCurrentColor(val);
     }
-    initMode();
+    await initMode();
     
     // Remove active class from all buttons and swatches
     document.querySelectorAll('.swatch, .dropdown-content button, .mobile-option-btn, .mobile-swatch').forEach(i => i.classList.remove('active'));
