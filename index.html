@@ -10,7 +10,15 @@
 
     <canvas id="colorCanvas"></canvas>
 
-    <div id="ui-container">
+    <!-- Mobile Menu Button -->
+    <button id="mobileMenuBtn" class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Desktop UI Container -->
+    <div id="ui-container" class="desktop-ui">
         <div class="swatch-group">
             <div class="swatch active" style="background: #000000;" onclick="setMode('color', '#000000', this)"></div>
             <div class="swatch" style="background: #ffffff;" onclick="setMode('color', '#ffffff', this)"></div>
@@ -67,6 +75,91 @@
         <div class="divider"></div>
         <button id="fsBtn" onclick="toggleFullscreen()">FS</button>
     </div>
+
+    <!-- Mobile Bottom Sheet Menu -->
+    <div id="mobileMenu" class="mobile-menu">
+        <div class="mobile-menu-header">
+            <h2>Screen Options</h2>
+            <button class="mobile-menu-close" onclick="toggleMobileMenu()" aria-label="Close">×</button>
+        </div>
+        
+        <div class="mobile-menu-content">
+            <!-- Color Swatches Section -->
+            <div class="mobile-section">
+                <h3>Colors</h3>
+                <div class="mobile-swatch-group">
+                    <div class="mobile-swatch active" style="background: #000000;" onclick="setMode('color', '#000000', this); closeMobileMenu();">
+                        <span>Black</span>
+                    </div>
+                    <div class="mobile-swatch" style="background: #ffffff;" onclick="setMode('color', '#ffffff', this); closeMobileMenu();">
+                        <span>White</span>
+                    </div>
+                    <div class="mobile-swatch custom-color-wrapper">
+                        <input type="color" id="mobileCustomPicker" oninput="setMode('color', this.value); closeMobileMenu();" title="Custom Color">
+                        <span>Custom</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Windows Section -->
+            <div class="mobile-section">
+                <h3>Windows</h3>
+                <div class="mobile-option-grid">
+                    <button class="mobile-option-btn" onclick="setMode('win_10_upd', null, this); closeMobileMenu();">Windows 10 Update</button>
+                    <button class="mobile-option-btn" onclick="setMode('win_xp_upd', null, this); closeMobileMenu();">Windows XP Update</button>
+                    <button class="mobile-option-btn" onclick="setMode('win_10_bsod', null, this); closeMobileMenu();">Windows 10 BSOD</button>
+                    <button class="mobile-option-btn" onclick="setMode('win_xp_bsod', null, this); closeMobileMenu();">Windows XP BSOD</button>
+                    <button class="mobile-option-btn" onclick="setMode('win_bios', null, this); closeMobileMenu();">BIOS Boot</button>
+                </div>
+            </div>
+
+            <!-- Apple Section -->
+            <div class="mobile-section">
+                <h3>Apple</h3>
+                <div class="mobile-option-grid">
+                    <button class="mobile-option-btn" onclick="setMode('macos_drift', null, this); closeMobileMenu();">macOS Drift</button>
+                    <button class="mobile-option-btn" onclick="setMode('macos_hello', null, this); closeMobileMenu();">macOS Hello</button>
+                    <button class="mobile-option-btn" onclick="setMode('macos_panic', null, this); closeMobileMenu();">Kernel Panic</button>
+                    <button class="mobile-option-btn" onclick="setMode('ios_update', null, this); closeMobileMenu();">iOS Update</button>
+                    <button class="mobile-option-btn" onclick="setMode('ios_disabled', null, this); closeMobileMenu();">iPhone Disabled</button>
+                </div>
+            </div>
+
+            <!-- Pranks Section -->
+            <div class="mobile-section">
+                <h3>Pranks</h3>
+                <div class="mobile-option-grid">
+                    <button class="mobile-option-btn" onclick="setMode('broken_screen', null, this); closeMobileMenu();">Broken Screen</button>
+                    <button class="mobile-option-btn" onclick="setMode('white_noise', null, this); closeMobileMenu();">White Noise</button>
+                    <button class="mobile-option-btn" onclick="setMode('radar', null, this); closeMobileMenu();">Radar Screen</button>
+                    <button class="mobile-option-btn" onclick="setMode('hacker', null, this); closeMobileMenu();">Hacker Typer</button>
+                    <button class="mobile-option-btn" onclick="setMode('no_signal', null, this); closeMobileMenu();">No Signal</button>
+                </div>
+            </div>
+
+            <!-- More Section -->
+            <div class="mobile-section">
+                <h3>More</h3>
+                <div class="mobile-option-grid">
+                    <button class="mobile-option-btn" onclick="setMode('ubuntu', null, this); closeMobileMenu();">Ubuntu 22.04</button>
+                    <button class="mobile-option-btn" onclick="setMode('chromeos', null, this); closeMobileMenu();">Chrome OS</button>
+                    <button class="mobile-option-btn" onclick="setMode('matrix', null, this); closeMobileMenu();">Matrix Rain</button>
+                    <button class="mobile-option-btn" onclick="setMode('dvd', null, this); closeMobileMenu();">DVD Bouncing</button>
+                    <button class="mobile-option-btn" onclick="setMode('flip_clock', null, this); closeMobileMenu();">Flip Clock</button>
+                    <button class="mobile-option-btn" onclick="setMode('quotes', null, this); closeMobileMenu();">Quotes</button>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="mobile-section mobile-actions">
+                <button class="mobile-action-btn" onclick="toggleFullscreen(); closeMobileMenu();">Fullscreen</button>
+                <button class="mobile-action-btn secondary" onclick="setMode('color', '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')); closeMobileMenu();">Random Color</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileMenuOverlay" class="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
 
     <div id="instruction">
         <b>F</b> Fullscreen • <b>Space</b> Random • <b>Esc</b> Exit<br>

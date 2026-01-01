@@ -1,6 +1,7 @@
 const canvas = document.getElementById('colorCanvas');
 const ctx = canvas.getContext('2d');
 const body = document.getElementById('mainBody');
+let isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 let currentMode = 'color';
 let currentColor = '#000000';
@@ -232,14 +233,79 @@ function setMode(mode, val, el) {
     currentMode = mode;
     if (val) currentColor = val;
     initMode();
-    document.querySelectorAll('.swatch, .dropdown-content button').forEach(i => i.classList.remove('active'));
-    if (el) el.classList.add('active');
+    // Remove active class from all buttons and swatches
+    document.querySelectorAll('.swatch, .dropdown-content button, .mobile-option-btn, .mobile-swatch').forEach(i => i.classList.remove('active'));
+    
+    // Add active class to clicked element
+    if (el) {
+        el.classList.add('active');
+    }
+    
+    // Also update mobile menu buttons if they exist
+    if (mode !== 'color') {
+        const mobileBtn = document.querySelector(`.mobile-option-btn[onclick*="${mode}"]`);
+        if (mobileBtn) {
+            mobileBtn.classList.add('active');
+        }
+    } else if (val) {
+        // For color mode, update swatch
+        const swatch = document.querySelector(`.swatch[style*="${val}"], .mobile-swatch[style*="${val}"]`);
+        if (swatch) {
+            swatch.classList.add('active');
+        }
+    }
+    
     resetUITimer();
 }
 
 function toggleFullscreen() {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen();
     else document.exitFullscreen();
+}
+
+// Mobile Menu Functions
+function toggleMobileMenu() {
+    const menu = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('mobileMenuOverlay');
+    const menuBtn = document.getElementById('mobileMenuBtn');
+    
+    if (menu && overlay && menuBtn) {
+        const isOpen = menu.classList.contains('show');
+        if (isOpen) {
+            closeMobileMenu();
+        } else {
+            openMobileMenu();
+        }
+    }
+}
+
+function openMobileMenu() {
+    const menu = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('mobileMenuOverlay');
+    const menuBtn = document.getElementById('mobileMenuBtn');
+    
+    if (menu && overlay && menuBtn) {
+        menu.classList.add('show');
+        overlay.classList.add('show');
+        menuBtn.classList.add('active');
+        body.classList.add('mobile-menu-open');
+        body.style.overflow = 'hidden';
+        resetUITimer();
+    }
+}
+
+function closeMobileMenu() {
+    const menu = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('mobileMenuOverlay');
+    const menuBtn = document.getElementById('mobileMenuBtn');
+    
+    if (menu && overlay && menuBtn) {
+        menu.classList.remove('show');
+        overlay.classList.remove('show');
+        menuBtn.classList.remove('active');
+        body.classList.remove('mobile-menu-open');
+        body.style.overflow = '';
+    }
 }
 
 function resetUITimer() {
@@ -252,40 +318,172 @@ function resetUITimer() {
     }, 3000);
 }
 
-window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; initMode(); });
-window.addEventListener('mousemove', resetUITimer);
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    initMode();
+}
+
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', () => {
+    // Delay to ensure viewport has updated
+    setTimeout(resizeCanvas, 100);
+});
+let lastMouseY = 0;
+window.addEventListener('mousemove', (e) => {
+    resetUITimer();
+    lastMouseY = e.clientY;
+    
+    // Show UI when mouse moves near top of screen (within 120px) on desktop/tablet
+    if (!isTouchDevice) {
+        if (e.clientY < 120 && body.classList.contains('hide-ui')) {
+            body.classList.add('show-ui-on-hover');
+        } else if (e.clientY > 180) {
+            body.classList.remove('show-ui-on-hover');
+        }
+    }
+});
+
+// Also show UI when hovering directly over the container area (desktop/tablet only)
+if (!isTouchDevice) {
+    const uiContainer = document.getElementById('ui-container');
+    if (uiContainer) {
+        uiContainer.addEventListener('mouseenter', () => {
+            if (body.classList.contains('hide-ui')) {
+                body.classList.add('show-ui-on-hover');
+            }
+        });
+        
+        uiContainer.addEventListener('mouseleave', () => {
+            // Only remove if mouse moves away from top area
+            if (lastMouseY > 180) {
+                body.classList.remove('show-ui-on-hover');
+            }
+        });
+    }
+}
+window.addEventListener('touchstart', (e) => {
+    // Don't reset timer if touching mobile menu (but allow if menu is closed)
+    const mobileMenu = document.getElementById('mobileMenu');
+    const isMenuOpen = mobileMenu && mobileMenu.classList.contains('show');
+    
+    if (!isMenuOpen && !e.target.closest('#mobileMenuBtn')) {
+        resetUITimer();
+    } else if (!e.target.closest('#mobileMenu') && !e.target.closest('#mobileMenuBtn')) {
+        // If menu is open and clicking outside, close it and reset timer
+        closeMobileMenu();
+        resetUITimer();
+    }
+});
+
+// Show hamburger button on canvas click/touch (for mobile)
+canvas.addEventListener('click', (e) => {
+    if (isTouchDevice) {
+        resetUITimer();
+    }
+});
+
+canvas.addEventListener('touchstart', (e) => {
+    if (isTouchDevice && !e.target.closest('#mobileMenu') && !e.target.closest('#mobileMenuBtn')) {
+        resetUITimer();
+    }
+});
 window.addEventListener('keydown', (e) => {
     if (e.key.toLowerCase() === 'f') toggleFullscreen();
     if (e.code === 'Space') setMode('color', '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'));
 });
 
-canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+resizeCanvas();
 animate(); resetUITimer();
 
-// --- Dropdown Hover Handling with Delay ---
+// --- Dropdown Hover/Touch Handling with Delay ---
 const dropdowns = document.querySelectorAll('.dropdown');
 const hideTimeouts = new Map();
+const openDropdowns = new Map(); // Track which dropdowns are open
 
 dropdowns.forEach(dropdown => {
     const content = dropdown.querySelector('.dropdown-content');
+    const dropBtn = dropdown.querySelector('.drop-btn');
     let hideTimeout = null;
 
-    dropdown.addEventListener('mouseenter', () => {
-        // Clear any pending hide timeout
+    function showDropdown() {
         if (hideTimeout) {
             clearTimeout(hideTimeout);
             hideTimeout = null;
         }
-        // Show dropdown immediately
         content.classList.add('show');
-    });
+        openDropdowns.set(dropdown, true);
+    }
 
-    dropdown.addEventListener('mouseleave', () => {
-        // Add delay before hiding
+    function hideDropdown() {
         hideTimeout = setTimeout(() => {
             content.classList.remove('show');
+            openDropdowns.delete(dropdown);
             hideTimeout = null;
-        }, 150); // 150ms delay
+        }, 150);
+    }
+
+    // Mouse events for desktop
+    if (!isTouchDevice) {
+        dropdown.addEventListener('mouseenter', showDropdown);
+        dropdown.addEventListener('mouseleave', hideDropdown);
+    }
+
+    // Touch/Click events for mobile
+    dropBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = openDropdowns.has(dropdown);
+        if (isOpen) {
+            content.classList.remove('show');
+            openDropdowns.delete(dropdown);
+        } else {
+            // Close other open dropdowns
+            dropdowns.forEach(otherDropdown => {
+                if (otherDropdown !== dropdown) {
+                    const otherContent = otherDropdown.querySelector('.dropdown-content');
+                    otherContent.classList.remove('show');
+                    openDropdowns.delete(otherDropdown);
+                }
+            });
+            showDropdown();
+        }
     });
+
+    // Prevent dropdown from closing when clicking inside it
+    content.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+});
+
+// Close dropdowns when clicking outside (single global handler)
+if (isTouchDevice) {
+    document.addEventListener('click', (e) => {
+        // Don't close if clicking on mobile menu elements
+        if (e.target.closest('#mobileMenu') || e.target.closest('#mobileMenuBtn')) {
+            return;
+        }
+        
+        let clickedInsideDropdown = false;
+        dropdowns.forEach(dropdown => {
+            if (dropdown.contains(e.target)) {
+                clickedInsideDropdown = true;
+            }
+        });
+        
+        if (!clickedInsideDropdown) {
+            dropdowns.forEach(dropdown => {
+                const content = dropdown.querySelector('.dropdown-content');
+                content.classList.remove('show');
+                openDropdowns.delete(dropdown);
+            });
+        }
+    });
+}
+
+// Close mobile menu on escape key
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeMobileMenu();
+    }
 });
 
