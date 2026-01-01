@@ -2,9 +2,13 @@
 
 import * as state from '../core/state.js';
 import { drawWhiteLogo, drawiOSProgressBar, drawMacOSProgressBar } from '../utils/drawing.js';
-import { imgApple } from '../utils/assets.js';
+import { imgApple, imgAppleWhite } from '../utils/assets.js';
+import { loadTemplate } from '../utils/template-loader.js';
+import { renderTemplateToCanvas } from '../utils/template-renderer.js';
 
-export function initAppleMode(mode, canvas) {
+const templateCache = new Map();
+
+export async function initAppleMode(mode, canvas) {
     if (mode === 'macos_drift') {
         const particles = Array.from({length: 80}, () => ({
             x: Math.random() * canvas.width,
@@ -15,6 +19,14 @@ export function initAppleMode(mode, canvas) {
             hue: Math.random() * 360
         }));
         state.setParticles(particles);
+    }
+    
+    // Preload template for this mode
+    if (mode && !templateCache.has(mode)) {
+        const template = await loadTemplate(mode);
+        if (template) {
+            templateCache.set(mode, template);
+        }
     }
 }
 
@@ -28,76 +40,60 @@ export function renderAppleMode(mode, ctx, canvas) {
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             const particles = state.getParticles();
             particles.forEach(p => {
-                p.x += p.vx;
-                p.y += p.vy;
-                if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-                if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+                // More realistic drift movement
+                p.x += p.vx * 0.5;
+                p.y += p.vy * 0.5;
+                // Wrap around edges instead of bouncing
+                if (p.x < 0) p.x = canvas.width;
+                if (p.x > canvas.width) p.x = 0;
+                if (p.y < 0) p.y = canvas.height;
+                if (p.y > canvas.height) p.y = 0;
+                // Smooth color cycling
+                const hue = (p.hue + (frame * 0.5)) % 360;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = `hsla(${p.hue + (frame % 360)}, 70%, 70%, 0.8)`;
+                ctx.fillStyle = `hsla(${hue}, 80%, 60%, 0.9)`;
                 ctx.fill();
             });
             break;
         case 'macos_hello': {
-            // macOS boot screen
-            ctx.fillStyle = '#1a1a1a';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Render template (preloaded during init)
+            const template = templateCache.get(mode);
+            renderTemplateToCanvas(template, ctx, canvas, {});
             
-            // Apple logo
-            drawWhiteLogo(ctx, imgApple, canvas, 100, -80);
+            // Apple logo - try white version first, fallback to filtered black version
+            if (imgAppleWhite.complete && imgAppleWhite.naturalWidth > 0) {
+                const logoSize = 120;
+                const logoX = canvas.width / 2 - logoSize / 2;
+                const logoY = canvas.height / 2 - logoSize / 2 - 100;
+                ctx.drawImage(imgAppleWhite, logoX, logoY, logoSize, logoSize);
+            } else if (imgApple.complete && imgApple.naturalWidth > 0) {
+                drawWhiteLogo(ctx, imgApple, canvas, 120, -100);
+            }
             
-            // Progress bar
-            const barWidth = 200;
+            // Progress bar - wider and more visible
+            const barWidth = 250;
             const barHeight = 4;
             const barX = canvas.width / 2 - barWidth / 2;
-            const barY = canvas.height / 2 + 40;
+            const barY = canvas.height / 2 + 50;
             const progressPercent = (progress % 100) / 100;
             drawMacOSProgressBar(ctx, barX, barY, barWidth, barHeight, progressPercent);
             break;
         }
         case 'macos_panic': {
-            // macOS Kernel Panic screen
-            ctx.fillStyle = '#1a1a1a';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Render template (preloaded during init)
+            const template = templateCache.get(mode);
+            renderTemplateToCanvas(template, ctx, canvas, {});
             
+            // Multi-language restart messages - dynamic content (word-wrapped)
             ctx.fillStyle = '#fff';
-            ctx.font = '14px "Monaco", "Menlo", "Courier New", monospace';
+            ctx.font = '12px "Monaco", "Menlo", "Courier New", monospace';
             ctx.textAlign = 'left';
             
             const margin = 40;
-            let yPos = 60;
+            let yPos = 340; // Start after template content
             const lineHeight = 20;
-            const sectionSpacing = 30;
             
-            // Panic message header
-            ctx.font = 'bold 14px "Monaco", "Menlo", "Courier New", monospace';
-            ctx.fillText('panic(cpu 0 caller 0xffffff80002d3a5a): Kernel trap at 0x0000000000000000, type 14=page fault', margin, yPos);
-            yPos += lineHeight * 2;
-            
-            // Backtrace
-            ctx.font = '14px "Monaco", "Menlo", "Courier New", monospace';
-            ctx.fillText('Backtrace (CPU 0), Frame : Return Address', margin, yPos);
-            yPos += lineHeight;
-            ctx.fillText('0xffffff8012345678 : 0xffffff80002d3a5a', margin + 20, yPos);
-            yPos += lineHeight;
-            ctx.fillText('0xffffff8012345680 : 0xffffff80002d3a5a', margin + 20, yPos);
-            yPos += lineHeight;
-            ctx.fillText('0xffffff8012345688 : 0xffffff80002d3a5a', margin + 20, yPos);
-            yPos += sectionSpacing;
-            
-            // System information
-            ctx.fillText('BSD process name corresponding to current thread: kernel_task', margin, yPos);
-            yPos += lineHeight;
-            ctx.fillText('Mac OS version:', margin, yPos);
-            yPos += lineHeight;
-            ctx.fillText('Not yet set', margin + 20, yPos);
-            yPos += lineHeight;
-            ctx.fillText('Kernel version:', margin, yPos);
-            yPos += lineHeight;
-            ctx.fillText('Darwin Kernel Version 22.1.0: Mon Oct 24 20:28:05 PDT 2022; root:xnu-8792.41.9~2/RELEASE_ARM64_T6000', margin + 20, yPos);
-            yPos += sectionSpacing * 2;
-            
-            // Multi-language restart messages
             const messages = [
                 'English: You need to restart your computer. Hold down the Power button for several seconds or press the Restart button.',
                 'Français: Vous devez redémarrer votre ordinateur. Maintenez le bouton d\'alimentation enfoncé pendant plusieurs secondes ou appuyez sur le bouton de redémarrage.',
@@ -108,7 +104,6 @@ export function renderAppleMode(mode, ctx, canvas) {
                 '한국어: 컴퓨터를 다시 시작해야 합니다. 전원 버튼을 몇 초 동안 길게 누르거나 재시작 버튼을 누르세요.'
             ];
             
-            ctx.font = '12px "Monaco", "Menlo", "Courier New", monospace';
             messages.forEach(msg => {
                 // Word wrap for long lines
                 const maxWidth = canvas.width - margin * 2;
@@ -129,70 +124,71 @@ export function renderAppleMode(mode, ctx, canvas) {
                     ctx.fillText(line, margin, yPos);
                     yPos += lineHeight;
                 }
-                yPos += 8; // Small spacing between languages
+                yPos += 10; // Spacing between languages
             });
             break;
         }
         case 'ios_update': {
-            // iOS Update screen
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Render template (preloaded during init)
+            const template = templateCache.get(mode);
+            renderTemplateToCanvas(template, ctx, canvas, {});
             
-            // Apple logo
-            drawWhiteLogo(ctx, imgApple, canvas, 100, -60);
+            // Apple logo - try white version first, fallback to filtered black version
+            if (imgAppleWhite.complete && imgAppleWhite.naturalWidth > 0) {
+                const logoSize = 120;
+                const logoX = canvas.width / 2 - logoSize / 2;
+                const logoY = canvas.height / 2 - logoSize / 2 - 80;
+                ctx.drawImage(imgAppleWhite, logoX, logoY, logoSize, logoSize);
+            } else if (imgApple.complete && imgApple.naturalWidth > 0) {
+                drawWhiteLogo(ctx, imgApple, canvas, 120, -80);
+            }
             
-            // Progress bar with rounded corners
-            const barWidth = 200;
+            // Progress bar with rounded corners - wider
+            const barWidth = 250;
             const barHeight = 4;
             const barX = canvas.width / 2 - barWidth / 2;
-            const barY = canvas.height / 2 + 50;
+            const barY = canvas.height / 2 + 60;
             const progressPercent = (progress % 100) / 100;
             drawiOSProgressBar(ctx, barX, barY, barWidth, barHeight, progressPercent);
             
-            // Status messages that cycle
+            // Status messages that cycle - more realistic
             const updateMessages = [
                 'Preparing update...',
                 'Verifying update...',
                 'Installing update...',
                 'Almost done...'
             ];
-            const messageIndex = Math.floor((frame / 120) % updateMessages.length);
+            const messageIndex = Math.floor((frame / 100) % updateMessages.length);
             const currentMessage = updateMessages[messageIndex];
             
-            // Status text
+            // Status text - better positioning
             ctx.fillStyle = '#999';
             ctx.textAlign = 'center';
-            ctx.font = '18px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
-            ctx.fillText(currentMessage, canvas.width / 2, barY + 35);
+            ctx.font = '20px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
+            ctx.fillText(currentMessage, canvas.width / 2, barY + 40);
             break;
         }
         case 'ios_disabled': {
-            // iPhone Disabled screen
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Render template (preloaded during init)
+            const template = templateCache.get(mode);
+            renderTemplateToCanvas(template, ctx, canvas, {});
             
-            ctx.fillStyle = '#fff';
-            ctx.textAlign = 'center';
-            ctx.font = '32px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
-            
-            // Main message
-            ctx.fillText('iPhone is disabled', canvas.width / 2, canvas.height / 2 - 30);
-            
-            // Countdown timer (simulate minutes passing)
+            // Countdown timer (simulate minutes passing) - dynamic content
             // Use frame counter to simulate time - 60 frames = 1 second, 3600 frames = 1 minute
             const framesPerMinute = 3600;
             const totalMinutes = 5;
             const elapsedMinutes = Math.floor((frame / framesPerMinute) % (totalMinutes + 1));
             const remainingMinutes = totalMinutes - elapsedMinutes;
             
-            ctx.font = '20px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
+            ctx.font = '22px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
             ctx.fillStyle = '#999';
+            ctx.textAlign = 'center';
             
             if (remainingMinutes > 0) {
                 const minuteText = remainingMinutes === 1 ? 'minute' : 'minutes';
-                ctx.fillText(`Try again in ${remainingMinutes} ${minuteText}`, canvas.width / 2, canvas.height / 2 + 20);
+                ctx.fillText(`Try again in ${remainingMinutes} ${minuteText}`, canvas.width / 2, canvas.height / 2 + 30);
             } else {
-                ctx.fillText('iPhone is disabled. Connect to iTunes', canvas.width / 2, canvas.height / 2 + 20);
+                ctx.fillText('iPhone is disabled. Connect to iTunes', canvas.width / 2, canvas.height / 2 + 30);
             }
             break;
         }

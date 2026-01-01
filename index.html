@@ -11,156 +11,146 @@
     <canvas id="colorCanvas"></canvas>
 
     <!-- Mobile Menu Button -->
-    <button id="mobileMenuBtn" class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Menu">
-        <span></span>
-        <span></span>
-        <span></span>
+    <button id="mobileMenuBtn" class="mobile-menu-btn fixed top-[calc(15px+env(safe-area-inset-top))] right-[calc(15px+env(safe-area-inset-right))] w-[50px] h-[50px] bg-bgUi backdrop-blur-[25px] border border-borderUi rounded-xl cursor-pointer z-[2001] flex flex-col justify-center items-center gap-[5px] p-3 shadow-[0_10px_30px_rgba(0,0,0,0.5)] touch-manipulation transition-all duration-300 ease-in-out hover:bg-white/15" onclick="toggleMobileMenu()" aria-label="Menu">
+        <span class="block w-6 h-0.5 bg-text rounded-sm transition-all duration-300 ease-in-out"></span>
+        <span class="block w-6 h-0.5 bg-text rounded-sm transition-all duration-300 ease-in-out"></span>
+        <span class="block w-6 h-0.5 bg-text rounded-sm transition-all duration-300 ease-in-out"></span>
     </button>
 
     <!-- Desktop UI Container -->
-    <div id="ui-container" class="desktop-ui">
-        <div class="swatch-group">
-            <div class="swatch active" style="background: #000000;" onclick="setMode('color', '#000000', this)"></div>
-            <div class="swatch" style="background: #ffffff;" onclick="setMode('color', '#ffffff', this)"></div>
-            <input type="color" id="customPicker" oninput="setMode('color', this.value)" title="Custom Color">
+    <div id="ui-container" class="desktop-ui fixed top-5 left-1/2 -translate-x-1/2 bg-bgUi backdrop-blur-[25px] px-3 py-1.5 rounded-[50px] flex items-center flex-wrap justify-center gap-2 border border-borderUi transition-[opacity,transform] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] z-[2000] select-none shadow-[0_15px_50px_rgba(0,0,0,0.8)] opacity-100 max-w-[95vw] min-w-min hover:pointer-events-auto hover:-translate-x-1/2 hover:translate-y-0 sm:px-3.5 sm:py-2 sm:gap-2.5 sm:top-4 max-[480px]:hidden max-[480px]:px-2.5 max-[480px]:py-2 max-[480px]:gap-1.5 max-[480px]:top-2.5 max-[480px]:rounded-[25px] max-[480px]:max-w-[calc(100vw-20px)] lg:px-4 lg:gap-2.5">
+        <div class="swatch-group flex gap-2 px-1 items-center max-[480px]:gap-1.5 max-[480px]:px-0.5">
+            <div class="swatch active w-7 h-7 rounded-full cursor-pointer border-2 border-white transition-all duration-200 ease-in-out flex-shrink-0 touch-manipulation hover:scale-110 shadow-[0_0_15px_rgba(255,255,255,0.5)] max-[480px]:w-8 max-[480px]:h-8 max-[480px]:min-w-8 max-[480px]:min-h-8" style="background: #000000;" onclick="setMode('color', '#000000', this)"></div>
+            <div class="swatch w-7 h-7 rounded-full cursor-pointer border-2 border-white/20 transition-all duration-200 ease-in-out flex-shrink-0 touch-manipulation hover:scale-110 hover:border-white max-[480px]:w-8 max-[480px]:h-8 max-[480px]:min-w-8 max-[480px]:min-h-8" style="background: #ffffff;" onclick="setMode('color', '#ffffff', this)"></div>
+            <input type="color" id="customPicker" class="max-[480px]:w-8 max-[480px]:h-8 max-[480px]:min-w-8 max-[480px]:min-h-8" oninput="setMode('color', this.value)" title="Custom Color">
         </div>
         
-        <div class="divider"></div>
+        <div class="divider w-px h-6 bg-white/20 mx-1.5 max-[480px]:h-5 max-[480px]:mx-1"></div>
 
-        <div class="dropdown">
-            <button class="drop-btn">Windows</button>
-            <div class="dropdown-content">
-                <button onclick="setMode('win_10_upd', null, this)">Windows 10 Update</button>
-                <button onclick="setMode('win_xp_upd', null, this)">Windows XP Update</button>
-                <button onclick="setMode('win_10_bsod', null, this)">Windows 10 BSOD</button>
-                <button onclick="setMode('win_xp_bsod', null, this)">Windows XP BSOD</button>
-                <button onclick="setMode('win_bios', null, this)">BIOS Boot</button>
+        <div class="dropdown relative inline-block pb-2 -mb-2 max-[480px]:mb-0 max-[480px]:pb-0">
+            <button class="drop-btn bg-white/8 text-text border border-white/10 px-3.5 py-1.5 rounded-[20px] cursor-pointer text-[0.625rem] font-semibold uppercase tracking-[0.5px] flex items-center gap-1.5 transition-all duration-200 min-h-11 min-w-11 touch-manipulation hover:bg-white/18 sm:text-[0.7rem] sm:px-3 sm:py-1.75 max-[480px]:text-[0.5625rem] max-[480px]:px-3 max-[480px]:py-2 max-[480px]:min-h-11 max-[480px]:min-w-[60px] lg:text-[0.6875rem] lg:px-4 lg:py-1.75">Windows</button>
+            <div class="dropdown-content opacity-0 invisible absolute top-full left-1/2 -translate-x-1/2 -translate-y-1 bg-bgUi min-w-[170px] max-w-[90vw] shadow-[0_10px_40px_rgba(0,0,0,0.6)] rounded-2xl border border-borderUi z-[2001] py-2 max-h-[75vh] overflow-y-auto mt-0 transition-[opacity,visibility,transform] duration-200 ease-in-out pointer-events-none sm:min-w-[180px] max-[480px]:fixed max-[480px]:left-1/2 max-[480px]:-translate-x-1/2 max-[480px]:-translate-y-1 max-[480px]:min-w-[200px] max-[480px]:max-w-[calc(100vw-40px)] max-[480px]:top-auto max-[480px]:bottom-[60px] lg:min-w-[200px]">
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('win_10_upd', null, this)">Windows 10 Update</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('win_xp_upd', null, this)">Windows XP Update</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('win_10_bsod', null, this)">Windows 10 BSOD</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('win_xp_bsod', null, this)">Windows XP BSOD</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('win_bios', null, this)">BIOS Boot</button>
             </div>
         </div>
 
-        <div class="dropdown">
-            <button class="drop-btn">Apple</button>
-            <div class="dropdown-content">
-                <button onclick="setMode('macos_drift', null, this)">macOS Drift</button>
-                <button onclick="setMode('macos_hello', null, this)">macOS Hello</button>
-                <button onclick="setMode('macos_panic', null, this)">Kernel Panic</button>
-                <button onclick="setMode('ios_update', null, this)">iOS Update</button>
-                <button onclick="setMode('ios_disabled', null, this)">iPhone Disabled</button>
+        <div class="dropdown relative inline-block pb-2 -mb-2 max-[480px]:mb-0 max-[480px]:pb-0">
+            <button class="drop-btn bg-white/8 text-text border border-white/10 px-3.5 py-1.5 rounded-[20px] cursor-pointer text-[0.625rem] font-semibold uppercase tracking-[0.5px] flex items-center gap-1.5 transition-all duration-200 min-h-11 min-w-11 touch-manipulation hover:bg-white/18 sm:text-[0.7rem] sm:px-3 sm:py-1.75 max-[480px]:text-[0.5625rem] max-[480px]:px-3 max-[480px]:py-2 max-[480px]:min-h-11 max-[480px]:min-w-[60px] lg:text-[0.6875rem] lg:px-4 lg:py-1.75">Apple</button>
+            <div class="dropdown-content opacity-0 invisible absolute top-full left-1/2 -translate-x-1/2 -translate-y-1 bg-bgUi min-w-[170px] max-w-[90vw] shadow-[0_10px_40px_rgba(0,0,0,0.6)] rounded-2xl border border-borderUi z-[2001] py-2 max-h-[75vh] overflow-y-auto mt-0 transition-[opacity,visibility,transform] duration-200 ease-in-out pointer-events-none sm:min-w-[180px] max-[480px]:fixed max-[480px]:left-1/2 max-[480px]:-translate-x-1/2 max-[480px]:-translate-y-1 max-[480px]:min-w-[200px] max-[480px]:max-w-[calc(100vw-40px)] max-[480px]:top-auto max-[480px]:bottom-[60px] lg:min-w-[200px]">
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('macos_drift', null, this)">macOS Drift</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('macos_hello', null, this)">macOS Hello</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('macos_panic', null, this)">Kernel Panic</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('ios_update', null, this)">iOS Update</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('ios_disabled', null, this)">iPhone Disabled</button>
             </div>
         </div>
 
-        <div class="dropdown">
-            <button class="drop-btn">Pranks</button>
-            <div class="dropdown-content">
-                <button onclick="setMode('broken_screen', null, this)">Broken Screen</button>
-                <button onclick="setMode('white_noise', null, this)">White Noise</button>
-                <button onclick="setMode('radar', null, this)">Radar Screen</button>
-                <button onclick="setMode('hacker', null, this)">Hacker Typer</button>
-                <button onclick="setMode('no_signal', null, this)">No Signal</button>
+        <div class="dropdown relative inline-block pb-2 -mb-2 max-[480px]:mb-0 max-[480px]:pb-0">
+            <button class="drop-btn bg-white/8 text-text border border-white/10 px-3.5 py-1.5 rounded-[20px] cursor-pointer text-[0.625rem] font-semibold uppercase tracking-[0.5px] flex items-center gap-1.5 transition-all duration-200 min-h-11 min-w-11 touch-manipulation hover:bg-white/18 sm:text-[0.7rem] sm:px-3 sm:py-1.75 max-[480px]:text-[0.5625rem] max-[480px]:px-3 max-[480px]:py-2 max-[480px]:min-h-11 max-[480px]:min-w-[60px] lg:text-[0.6875rem] lg:px-4 lg:py-1.75">Pranks</button>
+            <div class="dropdown-content opacity-0 invisible absolute top-full left-1/2 -translate-x-1/2 -translate-y-1 bg-bgUi min-w-[170px] max-w-[90vw] shadow-[0_10px_40px_rgba(0,0,0,0.6)] rounded-2xl border border-borderUi z-[2001] py-2 max-h-[75vh] overflow-y-auto mt-0 transition-[opacity,visibility,transform] duration-200 ease-in-out pointer-events-none sm:min-w-[180px] max-[480px]:fixed max-[480px]:left-1/2 max-[480px]:-translate-x-1/2 max-[480px]:-translate-y-1 max-[480px]:min-w-[200px] max-[480px]:max-w-[calc(100vw-40px)] max-[480px]:top-auto max-[480px]:bottom-[60px] lg:min-w-[200px]">
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('broken_screen', null, this)">Broken Screen</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('white_noise', null, this)">White Noise</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('radar', null, this)">Radar Screen</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('hacker', null, this)">Hacker Typer</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('no_signal', null, this)">No Signal</button>
             </div>
         </div>
 
-        <div class="dropdown">
-            <button class="drop-btn">More</button>
-            <div class="dropdown-content">
-                <button onclick="setMode('ubuntu', null, this)">Ubuntu 22.04</button>
-                <button onclick="setMode('chromeos', null, this)">Chrome OS</button>
-                <button onclick="setMode('matrix', null, this)">Matrix Rain</button>
-                <button onclick="setMode('dvd', null, this)">DVD Bouncing</button>
-                <button onclick="setMode('flip_clock', null, this)">Flip Clock</button>
-                <button onclick="setMode('quotes', null, this)">Quotes</button>
+        <div class="dropdown relative inline-block pb-2 -mb-2 max-[480px]:mb-0 max-[480px]:pb-0">
+            <button class="drop-btn bg-white/8 text-text border border-white/10 px-3.5 py-1.5 rounded-[20px] cursor-pointer text-[0.625rem] font-semibold uppercase tracking-[0.5px] flex items-center gap-1.5 transition-all duration-200 min-h-11 min-w-11 touch-manipulation hover:bg-white/18 sm:text-[0.7rem] sm:px-3 sm:py-1.75 max-[480px]:text-[0.5625rem] max-[480px]:px-3 max-[480px]:py-2 max-[480px]:min-h-11 max-[480px]:min-w-[60px] lg:text-[0.6875rem] lg:px-4 lg:py-1.75">More</button>
+            <div class="dropdown-content opacity-0 invisible absolute top-full left-1/2 -translate-x-1/2 -translate-y-1 bg-bgUi min-w-[170px] max-w-[90vw] shadow-[0_10px_40px_rgba(0,0,0,0.6)] rounded-2xl border border-borderUi z-[2001] py-2 max-h-[75vh] overflow-y-auto mt-0 transition-[opacity,visibility,transform] duration-200 ease-in-out pointer-events-none sm:min-w-[180px] max-[480px]:fixed max-[480px]:left-1/2 max-[480px]:-translate-x-1/2 max-[480px]:-translate-y-1 max-[480px]:min-w-[200px] max-[480px]:max-w-[calc(100vw-40px)] max-[480px]:top-auto max-[480px]:bottom-[60px] lg:min-w-[200px]">
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('ubuntu', null, this)">Ubuntu 22.04</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('chromeos', null, this)">Chrome OS</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('matrix', null, this)">Matrix Rain</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('dvd', null, this)">DVD Bouncing</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('flip_clock', null, this)">Flip Clock</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('quotes', null, this)">Quotes</button>
             </div>
         </div>
         
-        <div class="divider"></div>
-        <button id="fsBtn" onclick="toggleFullscreen()">FS</button>
+        <div class="divider w-px h-6 bg-white/20 mx-1.5 max-[480px]:h-5 max-[480px]:mx-1"></div>
+        <button id="fsBtn" class="bg-white text-black border-0 px-4 py-1.75 rounded-[20px] cursor-pointer text-[0.625rem] font-extrabold uppercase min-h-11 min-w-11 touch-manipulation max-[480px]:px-3.5 max-[480px]:py-2 max-[480px]:text-[0.5625rem] max-[480px]:min-h-11 max-[480px]:min-w-[50px]" onclick="toggleFullscreen()">FS</button>
     </div>
 
-    <!-- Mobile Bottom Sheet Menu -->
-    <div id="mobileMenu" class="mobile-menu">
-        <div class="mobile-menu-header">
-            <h2>Screen Options</h2>
-            <button class="mobile-menu-close" onclick="toggleMobileMenu()" aria-label="Close">×</button>
-        </div>
-        
-        <div class="mobile-menu-content">
-            <!-- Color Swatches Section -->
-            <div class="mobile-section">
-                <h3>Colors</h3>
-                <div class="mobile-swatch-group">
-                    <div class="mobile-swatch active" style="background: #000000;" onclick="setMode('color', '#000000', this); closeMobileMenu();">
-                        <span>Black</span>
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="mobile-menu fixed inset-0 z-[1999] translate-y-full transition-transform duration-300 ease-out">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="toggleMobileMenu()"></div>
+        <div class="absolute bottom-0 left-0 right-0 max-h-[85vh] bg-[#0f0f0f] rounded-t-[24px] border-t border-white/10 shadow-2xl overflow-hidden flex flex-col">
+            <div class="h-1 w-12 bg-white/20 rounded-full mx-auto mt-3 mb-1"></div>
+            <div class="px-5 py-3 border-b border-white/5 flex items-center justify-between">
+                <span class="text-text text-base font-medium">Menu</span>
+                <button class="text-text/40 text-xl leading-none w-8 h-8 flex items-center justify-center" onclick="toggleMobileMenu()">×</button>
+            </div>
+            <div class="flex-1 overflow-y-auto px-4 py-3 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                <div class="grid grid-cols-3 gap-2 mb-5">
+                    <button class="aspect-square rounded-2xl bg-black border border-white/15 flex items-center justify-center text-white text-xs font-medium active:opacity-70" onclick="setMode('color', '#000000', this); closeMobileMenu();">Black</button>
+                    <button class="aspect-square rounded-2xl bg-white border border-white/15 flex items-center justify-center text-black text-xs font-medium active:opacity-70" onclick="setMode('color', '#ffffff', this); closeMobileMenu();">White</button>
+                    <button class="aspect-square rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 border border-white/15 flex items-center justify-center text-white text-xs font-medium active:opacity-70 relative" onclick="closeMobileMenu();">
+                        <input type="color" id="mobileCustomPicker" class="absolute inset-0 w-full h-full opacity-0" oninput="setMode('color', this.value); closeMobileMenu();">
+                        Custom
+                    </button>
+                </div>
+                
+                <div class="mb-5">
+                    <div class="text-text/60 text-xs font-semibold uppercase tracking-wider mb-2 px-1">Windows</div>
+                    <div class="space-y-1.5">
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('win_10_upd', null, this); closeMobileMenu();">Windows 10 Update</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('win_xp_upd', null, this); closeMobileMenu();">Windows XP Update</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('win_10_bsod', null, this); closeMobileMenu();">Windows 10 BSOD</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('win_xp_bsod', null, this); closeMobileMenu();">Windows XP BSOD</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('win_bios', null, this); closeMobileMenu();">BIOS Boot</button>
                     </div>
-                    <div class="mobile-swatch" style="background: #ffffff;" onclick="setMode('color', '#ffffff', this); closeMobileMenu();">
-                        <span>White</span>
+                </div>
+
+                <div class="mb-5">
+                    <div class="text-text/60 text-xs font-semibold uppercase tracking-wider mb-2 px-1">Apple</div>
+                    <div class="space-y-1.5">
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('macos_drift', null, this); closeMobileMenu();">macOS Drift</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('macos_hello', null, this); closeMobileMenu();">macOS Hello</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('macos_panic', null, this); closeMobileMenu();">Kernel Panic</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('ios_update', null, this); closeMobileMenu();">iOS Update</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('ios_disabled', null, this); closeMobileMenu();">iPhone Disabled</button>
                     </div>
-                    <div class="mobile-swatch custom-color-wrapper">
-                        <input type="color" id="mobileCustomPicker" oninput="setMode('color', this.value); closeMobileMenu();" title="Custom Color">
-                        <span>Custom</span>
+                </div>
+
+                <div class="mb-5">
+                    <div class="text-text/60 text-xs font-semibold uppercase tracking-wider mb-2 px-1">Pranks</div>
+                    <div class="space-y-1.5">
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('broken_screen', null, this); closeMobileMenu();">Broken Screen</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('white_noise', null, this); closeMobileMenu();">White Noise</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('radar', null, this); closeMobileMenu();">Radar Screen</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('hacker', null, this); closeMobileMenu();">Hacker Typer</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('no_signal', null, this); closeMobileMenu();">No Signal</button>
                     </div>
                 </div>
-            </div>
 
-            <!-- Windows Section -->
-            <div class="mobile-section">
-                <h3>Windows</h3>
-                <div class="mobile-option-grid">
-                    <button class="mobile-option-btn" onclick="setMode('win_10_upd', null, this); closeMobileMenu();">Windows 10 Update</button>
-                    <button class="mobile-option-btn" onclick="setMode('win_xp_upd', null, this); closeMobileMenu();">Windows XP Update</button>
-                    <button class="mobile-option-btn" onclick="setMode('win_10_bsod', null, this); closeMobileMenu();">Windows 10 BSOD</button>
-                    <button class="mobile-option-btn" onclick="setMode('win_xp_bsod', null, this); closeMobileMenu();">Windows XP BSOD</button>
-                    <button class="mobile-option-btn" onclick="setMode('win_bios', null, this); closeMobileMenu();">BIOS Boot</button>
+                <div class="mb-5">
+                    <div class="text-text/60 text-xs font-semibold uppercase tracking-wider mb-2 px-1">More</div>
+                    <div class="space-y-1.5">
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('ubuntu', null, this); closeMobileMenu();">Ubuntu 22.04</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('chromeos', null, this); closeMobileMenu();">Chrome OS</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('matrix', null, this); closeMobileMenu();">Matrix Rain</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('dvd', null, this); closeMobileMenu();">DVD Bouncing</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('flip_clock', null, this); closeMobileMenu();">Flip Clock</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('quotes', null, this); closeMobileMenu();">Quotes</button>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Apple Section -->
-            <div class="mobile-section">
-                <h3>Apple</h3>
-                <div class="mobile-option-grid">
-                    <button class="mobile-option-btn" onclick="setMode('macos_drift', null, this); closeMobileMenu();">macOS Drift</button>
-                    <button class="mobile-option-btn" onclick="setMode('macos_hello', null, this); closeMobileMenu();">macOS Hello</button>
-                    <button class="mobile-option-btn" onclick="setMode('macos_panic', null, this); closeMobileMenu();">Kernel Panic</button>
-                    <button class="mobile-option-btn" onclick="setMode('ios_update', null, this); closeMobileMenu();">iOS Update</button>
-                    <button class="mobile-option-btn" onclick="setMode('ios_disabled', null, this); closeMobileMenu();">iPhone Disabled</button>
+                <div class="flex gap-2 mt-4 mb-2">
+                    <button class="flex-1 py-3 rounded-xl bg-white text-black font-semibold text-sm active:opacity-90" onclick="toggleFullscreen(); closeMobileMenu();">Fullscreen</button>
+                    <button class="flex-1 py-3 rounded-xl bg-white/10 border border-white/20 text-text font-semibold text-sm active:bg-white/15" onclick="setMode('color', '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')); closeMobileMenu();">Random</button>
                 </div>
-            </div>
-
-            <!-- Pranks Section -->
-            <div class="mobile-section">
-                <h3>Pranks</h3>
-                <div class="mobile-option-grid">
-                    <button class="mobile-option-btn" onclick="setMode('broken_screen', null, this); closeMobileMenu();">Broken Screen</button>
-                    <button class="mobile-option-btn" onclick="setMode('white_noise', null, this); closeMobileMenu();">White Noise</button>
-                    <button class="mobile-option-btn" onclick="setMode('radar', null, this); closeMobileMenu();">Radar Screen</button>
-                    <button class="mobile-option-btn" onclick="setMode('hacker', null, this); closeMobileMenu();">Hacker Typer</button>
-                    <button class="mobile-option-btn" onclick="setMode('no_signal', null, this); closeMobileMenu();">No Signal</button>
-                </div>
-            </div>
-
-            <!-- More Section -->
-            <div class="mobile-section">
-                <h3>More</h3>
-                <div class="mobile-option-grid">
-                    <button class="mobile-option-btn" onclick="setMode('ubuntu', null, this); closeMobileMenu();">Ubuntu 22.04</button>
-                    <button class="mobile-option-btn" onclick="setMode('chromeos', null, this); closeMobileMenu();">Chrome OS</button>
-                    <button class="mobile-option-btn" onclick="setMode('matrix', null, this); closeMobileMenu();">Matrix Rain</button>
-                    <button class="mobile-option-btn" onclick="setMode('dvd', null, this); closeMobileMenu();">DVD Bouncing</button>
-                    <button class="mobile-option-btn" onclick="setMode('flip_clock', null, this); closeMobileMenu();">Flip Clock</button>
-                    <button class="mobile-option-btn" onclick="setMode('quotes', null, this); closeMobileMenu();">Quotes</button>
-                </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="mobile-section mobile-actions">
-                <button class="mobile-action-btn" onclick="toggleFullscreen(); closeMobileMenu();">Fullscreen</button>
-                <button class="mobile-action-btn secondary" onclick="setMode('color', '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')); closeMobileMenu();">Random Color</button>
             </div>
         </div>
     </div>
 
     <!-- Mobile Menu Overlay -->
-    <div id="mobileMenuOverlay" class="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
+    <div id="mobileMenuOverlay" class="mobile-menu-overlay fixed top-0 left-0 w-full h-full bg-black/70 backdrop-blur-sm z-[1998] opacity-0 transition-opacity duration-300 ease-in-out" onclick="toggleMobileMenu()"></div>
 
-    <script type="module" src="js/main.js"></script>
+    <script type="module" src="src/js/main.js"></script>
 </body>
 </html>
