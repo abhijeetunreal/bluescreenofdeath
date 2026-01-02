@@ -45,6 +45,10 @@ export async function initGamesMode(mode, canvas) {
     // Load and inject the game template
     if (mode === 'tetris') {
         await loadAndInjectTetris();
+    } else if (mode === 'snake') {
+        await loadAndInjectSnake();
+    } else if (mode === 'pacman') {
+        await loadAndInjectPacman();
     }
     
     // Show the game container
@@ -91,6 +95,84 @@ async function loadAndInjectTetris() {
 }
 
 /**
+ * Load and inject Snake game
+ */
+async function loadAndInjectSnake() {
+    // Remove existing iframe if present
+    if (gameIframe) {
+        gameIframe.remove();
+        gameIframe = null;
+    }
+    
+    // Create iframe for the Snake game
+    gameIframe = document.createElement('iframe');
+    gameIframe.id = 'snake-iframe';
+    gameIframe.style.cssText = `
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: #000;
+    `;
+    gameIframe.sandbox = 'allow-scripts allow-same-origin allow-forms';
+    
+    // Load the template
+    try {
+        const template = await loadTemplate('snake');
+        if (template && template.html) {
+            // If template has HTML content, use it
+            gameIframe.srcdoc = template.html;
+        } else {
+            // Fallback: load from file directly
+            gameIframe.src = 'src/templates/games/snake.html';
+        }
+    } catch (error) {
+        console.warn('Failed to load Snake template, using direct path:', error);
+        gameIframe.src = 'src/templates/games/snake.html';
+    }
+    
+    gameContainer.appendChild(gameIframe);
+}
+
+/**
+ * Load and inject Pac-Man game
+ */
+async function loadAndInjectPacman() {
+    // Remove existing iframe if present
+    if (gameIframe) {
+        gameIframe.remove();
+        gameIframe = null;
+    }
+    
+    // Create iframe for the Pac-Man game
+    gameIframe = document.createElement('iframe');
+    gameIframe.id = 'pacman-iframe';
+    gameIframe.style.cssText = `
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: #000;
+    `;
+    gameIframe.sandbox = 'allow-scripts allow-same-origin allow-forms';
+    
+    // Load the template
+    try {
+        const template = await loadTemplate('pacman');
+        if (template && template.html) {
+            // If template has HTML content, use it
+            gameIframe.srcdoc = template.html;
+        } else {
+            // Fallback: load from file directly
+            gameIframe.src = 'src/templates/games/pacman.html';
+        }
+    } catch (error) {
+        console.warn('Failed to load Pac-Man template, using direct path:', error);
+        gameIframe.src = 'src/templates/games/pacman.html';
+    }
+    
+    gameContainer.appendChild(gameIframe);
+}
+
+/**
  * Render games mode (games handle their own rendering)
  * @param {string} mode - The game mode name
  * @param {CanvasRenderingContext2D} ctx - The canvas context (not used for games)
@@ -131,6 +213,6 @@ export function cleanupGame() {
  * @returns {boolean} True if the mode is a games mode
  */
 export function isGamesMode(mode) {
-    return mode === 'tetris' || mode.startsWith('game_');
+    return mode === 'tetris' || mode === 'snake' || mode === 'pacman' || mode.startsWith('game_');
 }
 
