@@ -1,6 +1,8 @@
 // Template loader utility - loads and parses HTML templates
 
 const templateCache = new Map();
+const MAX_CACHE_SIZE = 50; // Maximum number of templates to cache
+const accessOrder = []; // Track access order for LRU eviction
 
 /**
  * Loads and parses an HTML template for a given mode
@@ -8,8 +10,16 @@ const templateCache = new Map();
  * @returns {Promise<Object>} Parsed template object
  */
 export async function loadTemplate(modeName) {
+    if (!modeName) return null;
+    
     // Check cache first
     if (templateCache.has(modeName)) {
+        // Update access order (move to end)
+        const index = accessOrder.indexOf(modeName);
+        if (index > -1) {
+            accessOrder.splice(index, 1);
+        }
+        accessOrder.push(modeName);
         return templateCache.get(modeName);
     }
 
@@ -33,7 +43,18 @@ export async function loadTemplate(modeName) {
         }
         const htmlString = await response.text();
         const parsed = parseTemplate(htmlString);
+        
+        // Enforce cache size limit (LRU eviction)
+        if (templateCache.size >= MAX_CACHE_SIZE) {
+            // Remove least recently used entry
+            const lruKey = accessOrder.shift();
+            if (lruKey) {
+                templateCache.delete(lruKey);
+            }
+        }
+        
         templateCache.set(modeName, parsed);
+        accessOrder.push(modeName);
         return parsed;
     } catch (error) {
         console.warn(`Failed to load template for ${modeName}:`, error);
@@ -105,5 +126,13 @@ export function parseTemplate(htmlString) {
  */
 export function clearTemplateCache() {
     templateCache.clear();
+    accessOrder.length = 0;
+}
+
+/**
+ * Gets the current cache size
+ */
+export function getCacheSize() {
+    return templateCache.size;
 }
 

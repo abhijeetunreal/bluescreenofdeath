@@ -1,14 +1,19 @@
 // Drawing helper functions
 
 export function drawWhiteLogo(ctx, img, canvas, size, yOffset = 0) {
-    // Check if image is loaded and has valid dimensions
-    if (img.complete && img.naturalWidth > 0) {
-        ctx.save();
-        // Use composite operation for better quality white logo
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.filter = 'brightness(0) invert(1)';
-        ctx.drawImage(img, canvas.width/2 - size/2, canvas.height/2 - size/2 + yOffset, size, size);
-        ctx.restore();
+    // Check if image is loaded and has valid dimensions, and hasn't failed to load
+    if (img && img.complete && img.naturalWidth > 0 && !img._loadFailed) {
+        try {
+            ctx.save();
+            // Use composite operation for better quality white logo
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.filter = 'brightness(0) invert(1)';
+            ctx.drawImage(img, canvas.width/2 - size/2, canvas.height/2 - size/2 + yOffset, size, size);
+            ctx.restore();
+        } catch (error) {
+            console.warn('Failed to draw white logo:', error);
+            ctx.restore();
+        }
     }
 }
 
@@ -34,7 +39,8 @@ export function drawWinXPUpdate(ctx, canvas, progress) {
     // Stage messages that change based on progress - more realistic
     let stageMessage = "Preparing to install";
     let detailMessage = "Please wait...";
-    const progressPercent = (progress % 100) / 100;
+    // Clamp progress to 0-100 range and convert to 0-1
+    const progressPercent = Math.max(0, Math.min(1, (progress % 100) / 100));
     
     if (progressPercent < 0.25) {
         stageMessage = "Preparing to install";
@@ -336,6 +342,8 @@ export function drawRoundedRect(ctx, x, y, width, height, radius) {
 
 // Draw iOS-style progress bar with rounded corners
 export function drawiOSProgressBar(ctx, x, y, width, height, progress) {
+    // Validate and clamp progress to 0-1 range
+    progress = Math.max(0, Math.min(1, progress || 0));
     const radius = height / 2;
     const progressWidth = Math.max(0, Math.min(width, progress * width));
     
@@ -354,6 +362,8 @@ export function drawiOSProgressBar(ctx, x, y, width, height, progress) {
 
 // Draw macOS-style progress bar
 export function drawMacOSProgressBar(ctx, x, y, width, height, progress) {
+    // Validate and clamp progress to 0-1 range
+    progress = Math.max(0, Math.min(1, progress || 0));
     const radius = 4;
     const progressWidth = Math.max(0, Math.min(width, progress * width));
     
@@ -372,6 +382,8 @@ export function drawMacOSProgressBar(ctx, x, y, width, height, progress) {
 
 // Draw macOS boot progress bar (white fill on dark gray background)
 export function drawMacOSBootProgressBar(ctx, x, y, width, height, progress) {
+    // Validate and clamp progress to 0-1 range
+    progress = Math.max(0, Math.min(1, progress || 0));
     const radius = height / 2;
     const progressWidth = Math.max(0, Math.min(width, progress * width));
     

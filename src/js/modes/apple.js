@@ -71,12 +71,12 @@ export function renderAppleMode(mode, ctx, canvas) {
             renderTemplateToCanvas(template, ctx, canvas, {});
             
             // Apple logo - try white version first, fallback to filtered black version
-            if (imgAppleWhite.complete && imgAppleWhite.naturalWidth > 0) {
+            if (imgAppleWhite && imgAppleWhite.complete && imgAppleWhite.naturalWidth > 0 && !imgAppleWhite._loadFailed) {
                 const logoSize = 120;
                 const logoX = canvas.width / 2 - logoSize / 2;
                 const logoY = canvas.height / 2 - logoSize / 2 - 100;
                 ctx.drawImage(imgAppleWhite, logoX, logoY, logoSize, logoSize);
-            } else if (imgApple.complete && imgApple.naturalWidth > 0) {
+            } else if (imgApple && imgApple.complete && imgApple.naturalWidth > 0 && !imgApple._loadFailed) {
                 drawWhiteLogo(ctx, imgApple, canvas, 120, -100);
             }
             
@@ -85,7 +85,8 @@ export function renderAppleMode(mode, ctx, canvas) {
             const barHeight = 4;
             const barX = canvas.width / 2 - barWidth / 2;
             const barY = canvas.height / 2 + 50;
-            const progressPercent = (progress % 100) / 100;
+            // Clamp progress to 0-1 range
+            const progressPercent = Math.max(0, Math.min(1, (progress % 100) / 100));
             drawMacOSProgressBar(ctx, barX, barY, barWidth, barHeight, progressPercent);
             break;
         }
@@ -143,12 +144,12 @@ export function renderAppleMode(mode, ctx, canvas) {
             renderTemplateToCanvas(template, ctx, canvas, {});
             
             // Apple logo - try white version first, fallback to filtered black version
-            if (imgAppleWhite.complete && imgAppleWhite.naturalWidth > 0) {
+            if (imgAppleWhite && imgAppleWhite.complete && imgAppleWhite.naturalWidth > 0 && !imgAppleWhite._loadFailed) {
                 const logoSize = 120;
                 const logoX = canvas.width / 2 - logoSize / 2;
                 const logoY = canvas.height / 2 - logoSize / 2 - 80;
                 ctx.drawImage(imgAppleWhite, logoX, logoY, logoSize, logoSize);
-            } else if (imgApple.complete && imgApple.naturalWidth > 0) {
+            } else if (imgApple && imgApple.complete && imgApple.naturalWidth > 0 && !imgApple._loadFailed) {
                 drawWhiteLogo(ctx, imgApple, canvas, 120, -80);
             }
             
@@ -157,7 +158,8 @@ export function renderAppleMode(mode, ctx, canvas) {
             const barHeight = 4;
             const barX = canvas.width / 2 - barWidth / 2;
             const barY = canvas.height / 2 + 60;
-            const progressPercent = (progress % 100) / 100;
+            // Clamp progress to 0-1 range
+            const progressPercent = Math.max(0, Math.min(1, (progress % 100) / 100));
             drawiOSProgressBar(ctx, barX, barY, barWidth, barHeight, progressPercent);
             
             // Status messages that cycle - more realistic
@@ -302,9 +304,9 @@ export function renderAppleMode(mode, ctx, canvas) {
                 const logoX = canvas.width / 2 - logoWidth / 2;
                 const logoY = canvas.height / 2 - logoHeight / 2 - 80; // 80px above center
                 
-                if (imgAppleWhite.complete && imgAppleWhite.naturalWidth > 0) {
+                if (imgAppleWhite && imgAppleWhite.complete && imgAppleWhite.naturalWidth > 0 && !imgAppleWhite._loadFailed) {
                     ctx.drawImage(imgAppleWhite, logoX, logoY, logoWidth, logoHeight);
-                } else if (imgApple.complete && imgApple.naturalWidth > 0) {
+                } else if (imgApple && imgApple.complete && imgApple.naturalWidth > 0 && !imgApple._loadFailed) {
                     drawWhiteLogo(ctx, imgApple, canvas, logoWidth, -80);
                 }
                 

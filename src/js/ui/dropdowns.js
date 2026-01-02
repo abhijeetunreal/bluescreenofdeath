@@ -4,37 +4,50 @@ import { getIsTouchDevice } from '../core/canvas.js';
 import { closeMobileMenu } from './mobile-menu.js';
 
 const isTouchDevice = getIsTouchDevice();
+let abortController = null;
+const hideTimeouts = new Map(); // Track all hide timeouts for cleanup
+const openDropdowns = new Map(); // Track which dropdowns are open
 
 export function initDropdowns() {
+    // Cleanup existing handlers if any
+    cleanupDropdowns();
+    
+    // Create new AbortController for this set of handlers
+    abortController = new AbortController();
+    const signal = abortController.signal;
+    
     const dropdowns = document.querySelectorAll('.dropdown');
-    const openDropdowns = new Map(); // Track which dropdowns are open
+    if (!dropdowns.length) return;
 
     dropdowns.forEach(dropdown => {
         const content = dropdown.querySelector('.dropdown-content');
         const dropBtn = dropdown.querySelector('.drop-btn');
-        let hideTimeout = null;
+        
+        if (!content || !dropBtn) return;
 
         function showDropdown() {
-            if (hideTimeout) {
-                clearTimeout(hideTimeout);
-                hideTimeout = null;
+            const existingTimeout = hideTimeouts.get(dropdown);
+            if (existingTimeout) {
+                clearTimeout(existingTimeout);
+                hideTimeouts.delete(dropdown);
             }
             content.classList.add('show');
             openDropdowns.set(dropdown, true);
         }
 
         function hideDropdown() {
-            hideTimeout = setTimeout(() => {
+            const timeout = setTimeout(() => {
                 content.classList.remove('show');
                 openDropdowns.delete(dropdown);
-                hideTimeout = null;
+                hideTimeouts.delete(dropdown);
             }, 150);
+            hideTimeouts.set(dropdown, timeout);
         }
 
         // Mouse events for desktop
         if (!isTouchDevice) {
-            dropdown.addEventListener('mouseenter', showDropdown);
-            dropdown.addEventListener('mouseleave', hideDropdown);
+            dropdown.addEventListener('mouseenter', showDropdown, { signal });
+            dropdown.addEventListener('mouseleave', hideDropdown, { signal });
         }
 
         // Touch/Click events for mobile
@@ -49,18 +62,20 @@ export function initDropdowns() {
                 dropdowns.forEach(otherDropdown => {
                     if (otherDropdown !== dropdown) {
                         const otherContent = otherDropdown.querySelector('.dropdown-content');
-                        otherContent.classList.remove('show');
-                        openDropdowns.delete(otherDropdown);
+                        if (otherContent) {
+                            otherContent.classList.remove('show');
+                            openDropdowns.delete(otherDropdown);
+                        }
                     }
                 });
                 showDropdown();
             }
-        });
+        }, { signal });
 
         // Prevent dropdown from closing when clicking inside it
         content.addEventListener('click', (e) => {
             e.stopPropagation();
-        });
+        }, { signal });
     });
 
     // Close dropdowns when clicking outside (single global handler)
@@ -81,11 +96,34 @@ export function initDropdowns() {
             if (!clickedInsideDropdown) {
                 dropdowns.forEach(dropdown => {
                     const content = dropdown.querySelector('.dropdown-content');
-                    content.classList.remove('show');
-                    openDropdowns.delete(dropdown);
+                    if (content) {
+                        content.classList.remove('show');
+                        openDropdowns.delete(dropdown);
+                    }
                 });
             }
-        });
+        }, { signal });
     }
+}
+
+export function cleanupDropdowns() {
+    // Abort all event listeners
+    if (abortController) {
+        abortController.abort();
+        abortController = null;
+    }
+    
+    // Clear all hide timeouts
+    hideTimeouts.forEach(timeout => clearTimeout(timeout));
+    hideTimeouts.clear();
+    
+    // Close all open dropdowns
+    openDropdowns.forEach((_, dropdown) => {
+        const content = dropdown.querySelector('.dropdown-content');
+        if (content) {
+            content.classList.remove('show');
+        }
+    });
+    openDropdowns.clear();
 }
 

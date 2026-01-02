@@ -30,6 +30,9 @@ let win11LoadingState = {
     welcomeScreenActive: false
 };
 
+// Track current Windows mode to detect mode switches
+let currentWindowsMode = null;
+
 export async function initWindowsMode(mode, canvas) {
     // Preload template for this mode
     if (mode && !templateCache.has(mode)) {
@@ -38,6 +41,11 @@ export async function initWindowsMode(mode, canvas) {
             templateCache.set(mode, template);
         }
     }
+    
+    // Reset state when switching to a different Windows mode
+    const isModeSwitch = currentWindowsMode !== null && currentWindowsMode !== mode;
+    const previousMode = currentWindowsMode;
+    currentWindowsMode = mode;
     
     // Reset enhanced BSOD state when initializing that mode
     if (mode === 'win_10_bsod_enhanced') {
@@ -50,6 +58,17 @@ export async function initWindowsMode(mode, canvas) {
             reached100Frame: 0
         };
     }
+    // Also reset if switching away from enhanced BSOD to prevent state leakage
+    else if (isModeSwitch && previousMode === 'win_10_bsod_enhanced') {
+        enhancedBsodState = {
+            progress: 0,
+            lastUpdateFrame: 0,
+            nextUpdateDelay: 60,
+            blackScreenActive: false,
+            blackScreenStartFrame: 0,
+            reached100Frame: 0
+        };
+    }
     
     // Reset Windows 11 loading state when initializing that mode
     if (mode === 'win_11_loading') {
@@ -57,6 +76,18 @@ export async function initWindowsMode(mode, canvas) {
             progress: 0,
             lastUpdateFrame: 0,
             nextUpdateDelay: 180, // Initial delay: 3 seconds (180 frames at 60fps)
+            blackScreenActive: false,
+            blackScreenStartFrame: 0,
+            reached100Frame: 0,
+            welcomeScreenActive: false
+        };
+    }
+    // Also reset if switching away from Windows 11 loading to prevent state leakage
+    else if (isModeSwitch && previousMode === 'win_11_loading') {
+        win11LoadingState = {
+            progress: 0,
+            lastUpdateFrame: 0,
+            nextUpdateDelay: 180,
             blackScreenActive: false,
             blackScreenStartFrame: 0,
             reached100Frame: 0,
@@ -191,7 +222,8 @@ export function renderWindowsMode(mode, ctx, canvas) {
             const xpMargin = 30;
             let yPos = 408 + 54; // Start after template content
             const lineHeight = 18;
-            const dumpProgress = Math.min(1, progress * 2);
+            // Clamp dump progress to 0-1 range
+            const dumpProgress = Math.max(0, Math.min(1, progress * 2));
             
             ctx.fillStyle = '#fff';
             ctx.font = '16px "Courier New", "Lucida Console", monospace';

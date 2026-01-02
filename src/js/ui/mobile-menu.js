@@ -10,13 +10,16 @@ export function toggleMobileMenu() {
     const overlay = document.getElementById('mobileMenuOverlay');
     const menuBtn = document.getElementById('mobileMenuBtn');
     
-    if (menu && overlay && menuBtn) {
-        const isOpen = menu.classList.contains('show');
-        if (isOpen) {
-            closeMobileMenu();
-        } else {
-            openMobileMenu();
-        }
+    if (!menu || !overlay || !menuBtn) {
+        console.warn('Mobile menu elements not found');
+        return;
+    }
+    
+    const isOpen = menu.classList.contains('show');
+    if (isOpen) {
+        closeMobileMenu();
+    } else {
+        openMobileMenu();
     }
 }
 
