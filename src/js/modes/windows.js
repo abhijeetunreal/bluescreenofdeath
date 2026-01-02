@@ -1,6 +1,7 @@
 // Windows modes
 
 import * as state from '../core/state.js';
+import { getCanvas } from '../core/canvas.js';
 import { drawWhiteLogo, drawWinSpinner, drawWinXPUpdate, drawWin10Spinner, drawWin11Spinner } from '../utils/drawing.js';
 import { imgWin } from '../utils/assets.js';
 import { drawQRCode } from '../utils/qrcode.js';
@@ -8,6 +9,11 @@ import { loadTemplate } from '../utils/template-loader.js';
 import { renderTemplateToCanvas } from '../utils/template-renderer.js';
 
 const templateCache = new Map();
+
+// Iframe container for win_ransomware mode
+const canvas = getCanvas();
+let ransomwareContainer = null;
+let ransomwareIframe = null;
 
 // Mode-specific state for enhanced BSOD
 let enhancedBsodState = {
@@ -34,6 +40,17 @@ let win11LoadingState = {
 let currentWindowsMode = null;
 
 export async function initWindowsMode(mode, canvas) {
+    // Handle win_ransomware as a special case (full HTML page in iframe)
+    if (mode === 'win_ransomware') {
+        await loadAndInjectRansomware();
+        return;
+    }
+    
+    // Clean up ransomware iframe if switching away from it
+    if (currentWindowsMode === 'win_ransomware' && mode !== 'win_ransomware') {
+        cleanupRansomware();
+    }
+    
     // Preload template for this mode
     if (mode && !templateCache.has(mode)) {
         const template = await loadTemplate(mode);
@@ -471,6 +488,95 @@ export function renderWindowsMode(mode, ctx, canvas) {
             }
             break;
         }
+        case 'win_ransomware':
+            // Ransomware mode handles its own rendering through iframe
+            // Hide the main canvas
+            if (canvas) {
+                canvas.style.display = 'none';
+            }
+            break;
+        }
+    }
+
+/**
+ * Load and inject Ransomware template
+ */
+async function loadAndInjectRansomware() {
+    // Remove existing iframe if present
+    if (ransomwareIframe) {
+        ransomwareIframe.remove();
+        ransomwareIframe = null;
+    }
+    
+    // Hide the main canvas
+    if (canvas) {
+        canvas.style.display = 'none';
+    }
+    
+    // Create ransomware container if it doesn't exist
+    if (!ransomwareContainer) {
+        ransomwareContainer = document.createElement('div');
+        ransomwareContainer.id = 'ransomware-container';
+        ransomwareContainer.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1000;
+            background: #000;
+        `;
+        document.body.appendChild(ransomwareContainer);
+    }
+    
+    // Create iframe for the ransomware template
+    ransomwareIframe = document.createElement('iframe');
+    ransomwareIframe.id = 'ransomware-iframe';
+    ransomwareIframe.style.cssText = `
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: #000;
+    `;
+    ransomwareIframe.sandbox = 'allow-scripts allow-same-origin allow-forms';
+    
+    // Load the template
+    try {
+        const template = await loadTemplate('win_ransomware');
+        if (template && template.html) {
+            // If template has HTML content, use it
+            ransomwareIframe.srcdoc = template.html;
+        } else {
+            // Fallback: load from file directly
+            ransomwareIframe.src = 'src/templates/windows/win_ransomware.html';
+        }
+    } catch (error) {
+        console.warn('Failed to load Ransomware template, using direct path:', error);
+        ransomwareIframe.src = 'src/templates/windows/win_ransomware.html';
+    }
+    
+    ransomwareContainer.appendChild(ransomwareIframe);
+    ransomwareContainer.style.display = 'block';
+}
+
+/**
+ * Clean up ransomware state when switching away from ransomware mode
+ */
+function cleanupRansomware() {
+    // Hide ransomware container
+    if (ransomwareContainer) {
+        ransomwareContainer.style.display = 'none';
+    }
+    
+    // Remove iframe
+    if (ransomwareIframe) {
+        ransomwareIframe.remove();
+        ransomwareIframe = null;
+    }
+    
+    // Show main canvas again
+    if (canvas) {
+        canvas.style.display = 'block';
     }
 }
 
