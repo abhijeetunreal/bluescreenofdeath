@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows Security Alert</title>
+    <style>
+        /* --- GLOBAL & RESET --- */
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            cursor: default;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #000;
+        }
+
+        /* Glitch/Shake Animation Classes */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .shake-screen {
+            animation: shake 0.5s;
+            animation-iteration-count: infinite; 
+        }
+
+        .invert-colors {
+            filter: invert(1);
+        }
+
+        /* Not Responding Effect */
+        .not-responding {
+            opacity: 0.7;
+            filter: grayscale(0.5) brightness(1.1);
+            pointer-events: none;
+        }
+
+        /* --- DESKTOP ENVIRONMENT --- */
+        #desktop {
+            display: block;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            /* Realistic Windows 10 "Hero" Dark Gradient Approximation */
+            background: 
+                radial-gradient(circle at 85% 20%, rgba(0, 200, 255, 0.2) 0%, transparent 40%),
+                radial-gradient(circle at 10% 90%, rgba(0, 100, 200, 0.3) 0%, transparent 50%),
+                linear-gradient(135deg, #003366 0%, #001a33 100%);
+            background-size: cover;
+            transition: filter 0.1s;
+        }
+
+        /* --- TASKBAR (Windows 10 Style) --- */
+        .taskbar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            background: rgba(16, 16, 16, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .taskbar-left {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+
+        .start-btn {
+            width: 48px;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background 0.1s;
+        }
+        .start-btn:hover { background: rgba(255,255,255,0.1); }
+        .start-btn svg { fill: #fff; width: 18px; height: 18px; }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: #ffffff;
+            height: 30px; /* Reduced slightly */
+            width: 300px;
+            margin-left: 0;
+            padding-left: 10px;
+            color: #666;
+            font-size: 13px;
+        }
+        .search-box:hover { background: #f0f0f0; }
+
+        .taskbar-icon {
+            width: 48px;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-left: 2px;
+            border-bottom: 2px solid transparent;
+        }
+        .taskbar-icon:hover { background: rgba(255,255,255,0.1); }
+        .taskbar-icon.active { background: rgba(255,255,255,0.05); border-bottom-color: #76b9ed; }
+
+        .taskbar-right {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            padding-right: 10px;
+            color: white;
+            font-size: 12px;
+        }
+
+        .tray-icon {
+            padding: 0 8px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+        .tray-icon:hover { background: rgba(255,255,255,0.1); }
+        .tray-icon svg { fill: white; width: 16px; height: 16px; }
+
+        .tray-clock {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0 10px;
+            height: 100%;
+            font-size: 11px;
+            line-height: 1.2;
+            text-align: right;
+        }
+        .tray-clock:hover { background: rgba(255,255,255,0.1); }
+
+
+        /* --- DESKTOP ICONS --- */
+        .desktop-icon {
+            position: absolute;
+            width: 80px;
+            height: 90px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 10px;
+            color: white;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            border: 1px solid transparent;
+            font-size: 11px;
+        }
+        .desktop-icon:hover {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .desktop-icon img, .desktop-icon svg {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 5px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+
+
+        /* --- WINDOW BASE STYLE --- */
+        .window-frame {
+            position: absolute;
+            background: #fff;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            display: none;
+            flex-direction: column;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            /* Simple fade in */
+            animation: fadeIn 0.2s ease-out;
+            z-index: 100;
+        }
+        
+        /* Secondary terminals */
+        .extra-terminal {
+            display: flex; /* Override display:none from generic class if needed */
+            width: 500px;
+            height: 300px;
+            border: 1px solid #444;
+            background: #0c0c0c;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, -48%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+
+        /* --- CMD WINDOW (The Injection) --- */
+        #cmd-window {
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 500px;
+            border: 1px solid #444;
+            background: #0c0c0c;
+        }
+
+        .cmd-header {
+            background: #fff;
+            height: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-left: 10px;
+        }
+        
+        /* Specific override for CMD title bar look */
+        .cmd-header {
+            background: #ffffff; 
+            color: #000;
+            border-bottom: 1px solid #ccc;
+        }
+        
+        /* Header for extra terminals */
+        .extra-terminal .cmd-header {
+            height: 25px;
+            font-size: 11px;
+        }
+
+        .win-controls {
+            display: flex;
+            height: 100%;
+        }
+        .win-btn {
+            width: 46px;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: 0.1s;
+        }
+        .win-btn svg { width: 10px; height: 10px; }
+        .win-btn:hover { background: #e5e5e5; }
+        .win-btn.close:hover { background: #e81123; color: white; }
+        .win-btn.close:hover svg path { fill: white; }
+
+        .cmd-content {
+            flex-grow: 1;
+            padding: 5px;
+            color: #ccc;
+            font-family: 'Consolas', monospace;
+            font-size: 16px;
+            overflow-y: hidden; /* Hide scrollbar for speed */
+            white-space: pre-wrap;
+            line-height: 1.2;
+            background: #0c0c0c;
+        }
+        
+        .extra-terminal .cmd-content {
+            font-size: 12px;
+        }
+
+        .cursor-blink { animation: blink 1s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+
+        /* --- POPUP WINDOWS (Classic Error Style) --- */
+        .popup-window {
+            position: absolute;
+            width: 380px;
+            background: #f0f0f0;
+            border: 1px solid #999;
+            box-shadow: 6px 6px 20px rgba(0,0,0,0.5);
+            font-family: 'Segoe UI', sans-serif;
+            z-index: 150;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+            transition: transform 0.1s;
+        }
+        
+        /* Add shake on hover for extra "stuff" */
+        .popup-window:hover {
+            transform: translate(1px, 1px);
+        }
+
+        .popup-header {
+            background: #fff;
+            height: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+            font-size: 12px;
+            color: #000;
+        }
+
+        .popup-body {
+            padding: 20px 15px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .popup-icon svg { width: 32px; height: 32px; fill: #e81123; }
+
+        .popup-footer {
+            padding: 12px;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .popup-btn {
+            padding: 4px 24px;
+            border: 1px solid #0078d7; /* Default blue border */
+            background: #e1e1e1;
+            font-size: 13px;
+            min-width: 80px;
+            cursor: pointer;
+            box-shadow: inset 0 0 0 1px white;
+            outline: 1px solid #adadad;
+        }
+        .popup-btn:hover { background: #e5f1fb; border-color: #005a9e; }
+        .popup-btn:active { background: #cce4f7; }
+
+
+        /* --- RANSOMWARE WINDOW --- */
+        #ransom-window {
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 840px;
+            height: 620px;
+            background: #8b0000;
+            border: 3px solid #fff;
+            display: none;
+            color: white;
+            z-index: 200;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); /* Dim background */
+        }
+
+        .ransom-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: #5a0000;
+            border-bottom: 2px solid #fff;
+        }
+
+        .ransom-body { display: flex; height: 100%; }
+
+        .ransom-sidebar {
+            width: 280px;
+            padding: 20px;
+            border-right: 2px solid #fff;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ransom-main {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #fff;
+            color: #000;
+            font-family: 'Arial', sans-serif; /* WanaCry used basic fonts */
+        }
+
+        .lock-icon { font-size: 80px; margin-bottom: 10px; }
+
+        .timer-box {
+            background: #ffff00;
+            color: #000;
+            padding: 5px;
+            margin-top: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 26px;
+            border: 2px solid #000;
+        }
+        
+        .timer-label { font-size: 14px; font-weight: bold; margin-top: 15px; color: #ffcc00; }
+        .timer-date { font-size: 12px; margin-bottom: 5px; }
+
+        .payment-btn {
+            background: #4CAF50;
+            color: white;
+            padding: 12px;
+            margin-top: 20px;
+            border: none;
+            width: 100%;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .payment-btn:hover { background: #45a049; }
+
+        .btc-address {
+            background: #f5f5f5;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+        }
+
+        /* --- BLACKOUT LAYER --- */
+        #blackout {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            display: none;
+            z-index: 50;
+        }
+
+        #bsod {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #0078d7;
+            color: white;
+            display: none;
+            z-index: 99999;
+            padding: 100px;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- DESKTOP LAYER -->
+    <div id="desktop">
+        
+        <!-- DESKTOP ICONS -->
+        <div class="desktop-icon" style="top: 10px; left: 10px;">
+            <svg viewBox="0 0 24 24" fill="#58b4fa"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+            <span>My PC</span>
+        </div>
+        <div class="desktop-icon" style="top: 110px; left: 10px;">
+             <svg viewBox="0 0 24 24" fill="#fff"><path d="M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h4v-2H5V8h14v10h-4v2h4c1.1 0 2-.9 2-2V6c0-1.1-.89-2-2-2zm-7 6l-4 4h3v6h2v-6h3l-4-4z"/></svg>
+            <span>Network</span>
+        </div>
+        <div class="desktop-icon" style="top: 210px; left: 10px;">
+            <svg viewBox="0 0 24 24" fill="#a0a0a0"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            <span>Recycle Bin</span>
+        </div>
+
+        <!-- MAIN CMD WINDOW -->
+        <div id="cmd-window" class="window-frame">
+            <div class="cmd-header">
+                <div style="display:flex; align-items:center;">
+                    <svg style="width:16px;height:16px;margin-right:8px;" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10l2-2 4 4-4 4-2-2 2-2z" fill="#333"/></svg>
+                    <span class="cmd-title">Administrator: Command Prompt</span>
+                </div>
+                <div class="win-controls">
+                    <div class="win-btn"><svg viewBox="0 0 10 1"><path d="M0 0h10v1H0z" fill="#000"/></svg></div>
+                    <div class="win-btn"><svg viewBox="0 0 10 10"><path d="M0 0h10v10H0zM1 1v8h8V1z" fill="#000"/></svg></div>
+                    <div class="win-btn close"><svg viewBox="0 0 10 10"><path d="M0 0l10 10m0-10L0 10" stroke="#000" stroke-width="1.2"/></svg></div>
+                </div>
+            </div>
+            <div class="cmd-content" id="cmd-content">
+Microsoft Windows [Version 10.0.19045.3693]
+(c) Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32><span class="cursor-blink">_</span>
+            </div>
+        </div>
+
+        <!-- BSOD -->
+        <div id="bsod">
+            <div style="font-size: 100px; margin-bottom: 20px;">:(</div>
+            <p>Your PC ran into a problem and needs to restart. We're just collecting some error info, and then we'll restart for you.</p>
+            <p style="margin-top: 40px; font-size: 18px;">0% complete</p>
+            <div style="margin-top: 40px; font-size: 16px;">
+                <p>Stop code: CRITICAL_PROCESS_DIED</p>
+            </div>
+        </div>
+
+        <!-- BLACKOUT BACKGROUND -->
+        <div id="blackout"></div>
+
+        <!-- RANSOMWARE WINDOW -->
+        <div id="ransom-window" class="window-frame">
+            <div class="ransom-header">
+                <span style="font-weight:bold;">WanaDecrypt0r 2.0</span>
+                <div class="win-controls" style="height:auto;">
+                    <div class="win-btn close" style="height:20px; width:20px; background:none; border:1px solid white;"><svg viewBox="0 0 10 10"><path d="M0 0l10 10m0-10L0 10" stroke="#fff" stroke-width="1.5"/></svg></div>
+                </div>
+            </div>
+            <div class="ransom-body">
+                <div class="ransom-sidebar">
+                    <div class="lock-icon">🔒</div>
+                    
+                    <div class="timer-label">Payment will be raised on</div>
+                    <div class="timer-date" id="date-raise">1/2/2026 12:00:00</div>
+                    <div class="timer-box" id="timer-raise">00:00:00</div>
+                    
+                    <div class="timer-label" style="color:red; margin-top:30px;">Your files will be lost on</div>
+                    <div class="timer-date" id="date-lost">1/5/2026 12:00:00</div>
+                    <div class="timer-box" id="timer-lost">00:00:00</div>
+
+                    <div style="margin-top:auto; font-size:12px; text-align:left;">
+                        <p>Language: <span style="font-weight:bold; text-decoration:underline;">English</span></p>
+                    </div>
+                </div>
+                <div class="ransom-main">
+                    <h2 style="color: red; text-align: center; margin-top: 0; font-size: 22px;">Ooops, your files have been encrypted!</h2>
+                    
+                    <div style="background: #fff; color: #333; font-size: 13px; line-height: 1.5; padding-right: 10px;">
+                        <p><b>What Happened to My Computer?</b><br>
+                        Your important files are encrypted. Many of your documents, photos, videos, databases and other files are no longer accessible because they have been encrypted. Maybe you are busy looking for a way to recover your files, but do not waste your time. Nobody can recover your files without our decryption service.</p>
+                        
+                        <p><b>Can I Recover My Files?</b><br>
+                        Sure. We guarantee that you can recover all your files safely and easily. But you have not so enough time.</p>
+                        
+                        <p><b>How Do I Pay?</b><br>
+                        Payment is accepted in Bitcoin only. For more information, click <a href="#" style="color:#0066cc;">About Bitcoin</a>.</p>
+                    </div>
+                    
+                    <div class="btc-address">
+                        Send $300 worth of bitcoin to this address:<br>
+                        <b style="color:#000; font-size: 15px;">1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa</b>
+                    </div>
+                    
+                    <div style="display:flex; gap:10px;">
+                        <button class="payment-btn">Check Payment</button>
+                        <button class="payment-btn" style="background:#fff; color:#333; border:1px solid #999;">Decrypt</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TASKBAR -->
+        <div class="taskbar">
+            <div class="taskbar-left">
+                <!-- Start Button -->
+                <div class="start-btn">
+                    <svg viewBox="0 0 24 24"><path d="M3 12V6.5l6-1v6.5H3zm7 0v-7l11-1.5V12h-11zM3 13v5.5l6 1V13H3zm7 0v6.5l11 1.5V13h-11z"/></svg>
+                </div>
+                <!-- Search Box -->
+                <div class="search-box">
+                    <svg style="width:16px;height:16px;fill:#666;margin-right:10px;" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    Type here to search
+                </div>
+                <!-- Icons -->
+                <div class="taskbar-icon active">
+                    <svg style="width:20px;height:20px;fill:#fff;" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10l2-2 4 4-4 4-2-2 2-2z"/></svg>
+                </div>
+                <div class="taskbar-icon">
+                    <svg style="width:22px;height:22px;fill:#fff;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                </div>
+                <div class="taskbar-icon">
+                     <svg style="width:20px;height:20px;fill:#fff;" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H9v-2h6v2zm-3-7c-2.05 0-3.81-1.24-4.58-3h1.71c.63.9 1.68 1.5 2.87 1.5 1.19 0 2.24-.6 2.87-1.5h1.71c-.77 1.76-2.53 3-4.58 3z"/></svg>
+                </div>
+            </div>
+
+            <div class="taskbar-right">
+                <div class="tray-icon">
+                    <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z" transform="rotate(180 12 12)"/></svg>
+                </div>
+                <div class="tray-icon">
+                     <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                </div>
+                <div class="tray-icon">
+                     <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+                </div>
+                 <div class="tray-icon">
+                    <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                </div>
+                <div class="tray-clock" id="clock">
+                    <div id="clock-time">10:04 AM</div>
+                    <div id="clock-date">1/2/2026</div>
+                </div>
+                <div style="width:5px; height:100%; border-left:1px solid #777; margin-left:10px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const desktop = document.getElementById('desktop');
+        const cmdWindow = document.getElementById('cmd-window');
+        const cmdContent = document.getElementById('cmd-content');
+        const blackout = document.getElementById('blackout');
+        const ransomWindow = document.getElementById('ransom-window');
+        const bsod = document.getElementById('bsod');
+        
+        let extraTerminals = [];
+
+        // --- Clock Update ---
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; 
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const strTime = hours + ':' + minutes + ' ' + ampm;
+            
+            const dateStr = (now.getMonth() + 1) + '/' + now.getDate() + '/' + now.getFullYear();
+            
+            document.getElementById('clock-time').textContent = strTime;
+            document.getElementById('clock-date').textContent = dateStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // --- Sequence Config ---
+        const typingSpeed = 15; 
+        const commandDelay = 300; 
+        
+        const setupCommands = [
+            "cd %AppData%",
+            "attrib +h +s +r /s /d",
+            "vssadmin.exe Delete Shadows /All /Quiet",
+            "bcdedit /set {default} recoveryenabled No",
+            "taskkill /f /im explorer.exe",
+            "net stop wscsvc",
+            "net stop WinDefend",
+            "echo INITIATING MASS ENCRYPTION PROTOCOL...",
+            "start encryption_service.exe -recursive -force"
+        ];
+        
+        const popupMessages = [
+            { title: "System Error", msg: "Critical corruption detected in sector 0x84F3. The system cannot recover.", icon: "error" },
+            { title: "Windows Defender", msg: "Threat detected: Trojan.Win32.WannaCry. Quarantine failed.", icon: "shield" },
+            { title: "explorer.exe", msg: "The instruction at 0x00007FF4 referenced memory at 0x00000000. The memory could not be read.", icon: "error" },
+            { title: "Network Connection", msg: "Connection to remote server failed. Retrying...", icon: "network" },
+            { title: "Windows Firewall", msg: "Windows Firewall has been disabled by an administrator.", icon: "warning" },
+            { title: "Fatal Exception", msg: "Unhandled exception in module wntdll.dll at 0x4000005.", icon: "error" },
+            { title: "Memory Dump", msg: "Physical memory dump in progress. Do not turn off your computer.", icon: "warning" }
+        ];
+
+        // --- Random File Generator for Infinite Loop ---
+        const fileExts = ['docx', 'jpg', 'png', 'pdf', 'xlsx', 'db', 'mp4', 'dll', 'sys', 'iso'];
+        const folders = ['Documents', 'Pictures', 'Downloads', 'Desktop', 'AppData', 'System32', 'Program Files'];
+        const users = ['Admin', 'User', 'System', 'Guest'];
+
+        function generateRandomFile() {
+             const ext = fileExts[Math.floor(Math.random() * fileExts.length)];
+             const folder = folders[Math.floor(Math.random() * folders.length)];
+             const user = users[Math.floor(Math.random() * users.length)];
+             const id = Math.floor(Math.random() * 999999);
+             return `C:\\Users\\${user}\\${folder}\\file_${id}.${ext}`;
+        }
+
+        // --- Logic ---
+        
+        window.onload = function() {
+            setTimeout(openCmd, 800);
+        };
+
+        // Fullscreen trigger (user must click)
+        document.body.addEventListener('click', () => {
+            document.documentElement.requestFullscreen().catch(e => {});
+        });
+
+        function openCmd() {
+            cmdWindow.style.display = 'flex';
+            runCommands(0);
+        }
+
+        function runCommands(index) {
+            if (index >= setupCommands.length) {
+                // Switch to Infinite Mode
+                startInfiniteEncryption();
+                return;
+            }
+
+            // Remove blinker temporarily
+            let currentHTML = cmdContent.innerHTML.replace('<span class="cursor-blink">_</span>', '');
+            cmdContent.innerHTML = currentHTML;
+
+            const cmdLine = setupCommands[index];
+            let charIndex = 0;
+
+            const typeInterval = setInterval(() => {
+                cmdContent.innerHTML += cmdLine.charAt(charIndex);
+                cmdContent.scrollTop = cmdContent.scrollHeight;
+                charIndex++;
+
+                if (charIndex >= cmdLine.length) {
+                    clearInterval(typeInterval);
+                    cmdContent.innerHTML += "<br>";
+                    
+                    cmdContent.innerHTML += 'C:\\Windows\\system32><span class="cursor-blink">_</span>';
+                    cmdContent.scrollTop = cmdContent.scrollHeight;
+                    
+                    setTimeout(() => runCommands(index + 1), commandDelay);
+                }
+            }, typingSpeed);
+        }
+
+        // --- NEW: Spawn Extra Terminals ---
+        function spawnTerminal() {
+            if (extraTerminals.length > 5) return; // Cap at 5 extra to save performance
+
+            const term = document.createElement('div');
+            term.className = 'window-frame extra-terminal';
+            
+            // Random Pos
+            const x = Math.random() * (window.innerWidth - 500);
+            const y = Math.random() * (window.innerHeight - 300);
+            term.style.left = x + 'px';
+            term.style.top = y + 'px';
+            term.style.transform = 'none'; // reset center transform
+
+            term.innerHTML = `
+                <div class="cmd-header">
+                    <div style="display:flex; align-items:center;">
+                         <span class="cmd-title">C:\\Windows\\System32\\cmd.exe</span>
+                    </div>
+                </div>
+                <div class="cmd-content">Microsoft Windows [Version 10.0.19045.3693]<br>(c) Microsoft Corporation. All rights reserved.<br><br></div>
+            `;
+            
+            desktop.appendChild(term);
+            extraTerminals.push(term);
+        }
+
+        // --- NEW: Make a window "Not Responding" ---
+        function makeUnresponsive() {
+            // Get all windows (main cmd, extra terminals, popups)
+            const allWindows = document.querySelectorAll('.window-frame, .popup-window');
+            if (allWindows.length === 0) return;
+            
+            const target = allWindows[Math.floor(Math.random() * allWindows.length)];
+            
+            // Check if already frozen
+            if (target.classList.contains('not-responding')) return;
+
+            target.classList.add('not-responding');
+            
+            // Update title if possible
+            const titleSpan = target.querySelector('.cmd-title') || target.querySelector('.popup-header span:first-child');
+            if (titleSpan) {
+                titleSpan.innerText += " (Not Responding)";
+            }
+        }
+
+        // --- NEW: Window Trails (Solitaire Effect) ---
+        function createTrail() {
+            const allWindows = document.querySelectorAll('.popup-window');
+            if (allWindows.length === 0) return;
+            const source = allWindows[Math.floor(Math.random() * allWindows.length)];
+            
+            const rect = source.getBoundingClientRect();
+            
+            // Create 5 clones
+            for(let i=1; i<=10; i++) {
+                const clone = source.cloneNode(true);
+                clone.style.left = (rect.left + (i * 10)) + 'px';
+                clone.style.top = (rect.top + (i * 10)) + 'px';
+                clone.style.zIndex = 100 + i;
+                clone.classList.add('not-responding'); // Trails are usually dead
+                desktop.appendChild(clone);
+            }
+        }
+
+
+        // --- Infinite Encryption Loop ---
+        function startInfiniteEncryption() {
+            let chaosLevel = 0;
+            
+            // Remove cursor for the stream
+            let currentHTML = cmdContent.innerHTML.replace('<span class="cursor-blink">_</span>', '');
+            cmdContent.innerHTML = currentHTML;
+
+            // 1. The Scroll (Main Terminal)
+            const scrollInterval = setInterval(() => {
+                const file = generateRandomFile();
+                const status = Math.random() > 0.1 ? '<span style="color:#0f0">Done</span>' : '<span style="color:red">Failed (Locked)</span>';
+                const line = `Encrypting ${file}... ${status}<br>`;
+                
+                // Add to main terminal
+                cmdContent.innerHTML += line;
+                if(cmdContent.innerHTML.length > 30000) cmdContent.innerHTML = cmdContent.innerHTML.substring(5000);
+                cmdContent.scrollTop = cmdContent.scrollHeight;
+
+                // Add to extra terminals randomly
+                extraTerminals.forEach(term => {
+                    const contentDiv = term.querySelector('.cmd-content');
+                    contentDiv.innerHTML += line;
+                    contentDiv.scrollTop = contentDiv.scrollHeight;
+                    if(contentDiv.innerHTML.length > 10000) contentDiv.innerHTML = contentDiv.innerHTML.substring(2000);
+                });
+
+            }, 20);
+
+            // 2. The Chaos Manager (Stuff)
+            const chaosInterval = setInterval(() => {
+                chaosLevel++;
+                
+                // --- Level 5: Popups ---
+                if (chaosLevel > 5 && Math.random() > 0.6) spawnPopup();
+
+                // --- Level 10: Glitch Effects ---
+                if (chaosLevel > 10 && Math.random() > 0.7) {
+                    desktop.style.filter = 'invert(1)';
+                    setTimeout(() => desktop.style.filter = 'invert(0)', 50);
+                }
+
+                // --- Level 20: Screen Shake ---
+                if (chaosLevel > 20 && Math.random() > 0.8) {
+                    desktop.classList.add('shake-screen');
+                    setTimeout(() => desktop.classList.remove('shake-screen'), 500);
+                }
+                
+                // --- Level 25: Extra Terminals ---
+                if (chaosLevel > 25 && chaosLevel % 10 === 0) {
+                    spawnTerminal();
+                }
+
+                // --- Level 40: "Not Responding" ---
+                if (chaosLevel > 40 && Math.random() > 0.6) {
+                    makeUnresponsive();
+                }
+
+                // --- Level 60: Window Trails ---
+                if (chaosLevel > 60 && Math.random() > 0.5) {
+                    createTrail();
+                }
+                
+                // --- Level 90: CRASH ---
+                if (chaosLevel > 90) { // Approx 18 seconds
+                    clearInterval(scrollInterval);
+                    clearInterval(chaosInterval);
+                    triggerBSOD();
+                }
+
+            }, 200);
+        }
+
+        function spawnPopup(isRecursive = false) {
+            // Cap max popups
+            if (document.querySelectorAll('.popup-window').length > 50) return;
+
+            const popup = document.createElement('div');
+            popup.className = 'popup-window';
+            
+            const x = Math.max(0, Math.random() * (window.innerWidth - 400));
+            const y = Math.max(0, Math.random() * (window.innerHeight - 250));
+            popup.style.left = `${x}px`;
+            popup.style.top = `${y}px`;
+
+            const data = popupMessages[Math.floor(Math.random() * popupMessages.length)];
+            
+            // Icon SVG selection
+            let iconSvg = '';
+            if(data.icon === 'shield') {
+                iconSvg = '<svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" fill="#0078d7"/></svg>';
+            } else if (data.icon === 'warning') {
+                iconSvg = '<svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" fill="#ffcc00"/></svg>';
+            } else {
+                iconSvg = '<svg viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z" fill="#e81123"/></svg>';
+            }
+
+            popup.innerHTML = `
+                <div class="popup-header">
+                    <span>${data.title}</span>
+                    <span class="close-popup" style="color:#666; cursor:pointer">✕</span>
+                </div>
+                <div class="popup-body">
+                    <div class="popup-icon">${iconSvg}</div>
+                    <div>${data.msg}</div>
+                </div>
+                <div class="popup-footer">
+                    <button class="popup-btn">OK</button>
+                </div>
+            `;
+            
+            const closeHandler = () => {
+                popup.remove();
+                spawnPopup(true);
+                spawnPopup(true);
+            };
+            
+            popup.querySelector('.close-popup').onclick = closeHandler;
+            popup.querySelector('.popup-btn').onclick = closeHandler;
+
+            desktop.appendChild(popup);
+        }
+
+        function triggerBSOD() {
+            // Flash BSOD for 2 seconds
+            bsod.style.display = 'block';
+            
+            setTimeout(() => {
+                bsod.style.display = 'none';
+                triggerMalware();
+            }, 2500);
+        }
+
+        function triggerMalware() {
+            cmdWindow.style.display = 'none';
+            document.querySelector('.taskbar').style.display = 'none';
+            document.querySelectorAll('.desktop-icon').forEach(el => el.style.display = 'none');
+            // Remove all temp stuff
+            extraTerminals.forEach(t => t.remove());
+            document.querySelectorAll('.popup-window').forEach(p => p.remove());
+
+            blackout.style.display = 'block';
+            
+            setTimeout(() => {
+                ransomWindow.style.display = 'block';
+                startTimer();
+            }, 1000);
+        }
+
+        function startTimer() {
+            const now = new Date();
+            const raiseDate = new Date(now.getTime() + 72*60*60*1000);
+            const lostDate = new Date(now.getTime() + 168*60*60*1000); 
+            
+            document.getElementById('date-raise').innerText = raiseDate.toLocaleString();
+            document.getElementById('date-lost').innerText = lostDate.toLocaleString();
+
+            let timer = 72 * 60 * 60; 
+            
+            const box1 = document.getElementById('timer-raise');
+            const box2 = document.getElementById('timer-lost');
+
+            setInterval(function () {
+                let hours = parseInt(timer / 3600, 10);
+                let minutes = parseInt((timer % 3600) / 60, 10);
+                let seconds = parseInt(timer % 60, 10);
+
+                hours = hours < 10 ? "0" + hours : hours;
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+
+                box1.textContent = hours + ":" + minutes + ":" + seconds;
+                box2.textContent = hours + ":" + minutes + ":" + seconds;
+
+                if (--timer < 0) timer = 0;
+            }, 1000);
+        }
+
+    </script>
+</body>
+</html>
+

@@ -49,8 +49,8 @@ export async function loadTemplate(modeName) {
         }
         const htmlString = await response.text();
         
-        // Games templates are full HTML pages, return raw HTML
-        if (modeName === 'tetris' || modeName === 'snake' || modeName === 'mario' || modeName === 'flap' || modeName === 'neon_vector' || modeName === 'neon_boids' || modeName === 'chess' || modeName === 'circular_maze' || modeName.startsWith('game_')) {
+        // Games templates and win_ransomware are full HTML pages, return raw HTML
+        if (modeName === 'tetris' || modeName === 'snake' || modeName === 'mario' || modeName === 'flap' || modeName === 'neon_vector' || modeName === 'neon_boids' || modeName === 'chess' || modeName === 'circular_maze' || modeName === 'win_ransomware' || modeName.startsWith('game_')) {
             const gameTemplate = { html: htmlString, type: 'game' };
             
             // Enforce cache size limit (LRU eviction)

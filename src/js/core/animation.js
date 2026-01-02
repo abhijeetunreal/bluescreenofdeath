@@ -9,6 +9,7 @@ import { initPrankMode, renderPrankMode } from '../modes/pranks.js';
 import { initMiscMode, renderMiscMode } from '../modes/misc.js';
 import { initGamesMode, renderGamesMode, cleanupGame, isGamesMode } from '../modes/games.js';
 import { resetUITimer } from '../ui/ui-timer.js';
+import { handleModeChange } from '../ui/game-screensaver.js';
 
 const canvas = getCanvas();
 const ctx = getCtx();
@@ -103,6 +104,9 @@ export function animate() {
 }
 
 export async function setMode(mode, val, el) {
+    // Notify screensaver of mode change (will stop if switching to non-game mode)
+    handleModeChange(mode);
+    
     // Set mode immediately for UI responsiveness
     state.setCurrentMode(mode);
     if (val) {
