@@ -9,6 +9,16 @@ import { renderTemplateToCanvas } from '../utils/template-renderer.js';
 
 const templateCache = new Map();
 
+// Mode-specific state for enhanced BSOD
+let enhancedBsodState = {
+    progress: 0,
+    lastUpdateFrame: 0,
+    nextUpdateDelay: 0, // frames to wait before next update
+    blackScreenActive: false,
+    blackScreenStartFrame: 0,
+    reached100Frame: 0
+};
+
 export async function initWindowsMode(mode, canvas) {
     // Preload template for this mode
     if (mode && !templateCache.has(mode)) {
@@ -16,6 +26,18 @@ export async function initWindowsMode(mode, canvas) {
         if (template) {
             templateCache.set(mode, template);
         }
+    }
+    
+    // Reset enhanced BSOD state when initializing that mode
+    if (mode === 'win_10_bsod_enhanced') {
+        enhancedBsodState = {
+            progress: 0,
+            lastUpdateFrame: 0,
+            nextUpdateDelay: 60, // Start after ~1 second (assuming 60fps)
+            blackScreenActive: false,
+            blackScreenStartFrame: 0,
+            reached100Frame: 0
+        };
     }
 }
 
@@ -74,6 +96,115 @@ export function renderWindowsMode(mode, ctx, canvas) {
             
             // QR code - drawn after sad face so it overlaps from the right
             drawQRCode(ctx, qrX, qrY, qrSize);
+            
+            ctx.textAlign = 'left';
+            break;
+        }
+        case 'win_10_bsod_enhanced': {
+            // Handle black screen overlay
+            if (enhancedBsodState.blackScreenActive) {
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                // After 3 seconds of black screen, reset (simulate restart)
+                const blackScreenDuration = frame - enhancedBsodState.blackScreenStartFrame;
+                if (blackScreenDuration > 180) { // ~3 seconds at 60fps
+                    // Reset state for next cycle
+                    enhancedBsodState.progress = 0;
+                    enhancedBsodState.lastUpdateFrame = frame;
+                    enhancedBsodState.nextUpdateDelay = 60;
+                    enhancedBsodState.blackScreenActive = false;
+                    enhancedBsodState.reached100Frame = 0;
+                }
+                break;
+            }
+            
+            // Update progress with realistic stuttering animation
+            if (enhancedBsodState.progress < 100) {
+                const framesSinceLastUpdate = frame - enhancedBsodState.lastUpdateFrame;
+                
+                if (framesSinceLastUpdate >= enhancedBsodState.nextUpdateDelay) {
+                    // Random increment between 1-5%
+                    const increment = Math.floor(Math.random() * 5) + 1;
+                    enhancedBsodState.progress = Math.min(100, enhancedBsodState.progress + increment);
+                    enhancedBsodState.lastUpdateFrame = frame;
+                    
+                    // Random delay between 1-4 seconds (60-240 frames at 60fps)
+                    enhancedBsodState.nextUpdateDelay = Math.floor(Math.random() * 180) + 60;
+                }
+            } else if (enhancedBsodState.progress >= 100 && enhancedBsodState.reached100Frame === 0) {
+                // Just reached 100%, record the frame
+                enhancedBsodState.reached100Frame = frame;
+            } else if (enhancedBsodState.reached100Frame > 0) {
+                // Wait 2 seconds at 100% before showing black screen
+                const framesAt100 = frame - enhancedBsodState.reached100Frame;
+                if (framesAt100 > 120) { // ~2 seconds at 60fps
+                    enhancedBsodState.blackScreenActive = true;
+                    enhancedBsodState.blackScreenStartFrame = frame;
+                }
+            }
+            
+            // Render background from template
+            const template = templateCache.get(mode);
+            if (template && template.background) {
+                ctx.fillStyle = template.background.color;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            } else {
+                // Fallback background color
+                ctx.fillStyle = '#0078D7';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            
+            // Calculate centered layout (matching HTML design - 85% width, max 1000px)
+            const containerWidth = Math.min(1000, canvas.width * 0.85);
+            const containerX = (canvas.width - containerWidth) / 2;
+            const containerY = canvas.height * 0.5 - 200; // Start from center, offset up
+            
+            // Draw large sad face emoji (120px font size, matching HTML)
+            ctx.fillStyle = '#fff';
+            ctx.font = '120px "Segoe UI", sans-serif';
+            ctx.textAlign = 'left';
+            const sadFaceY = containerY;
+            ctx.fillText(':(', containerX, sadFaceY);
+            
+            // Main message text (24px, light weight)
+            const messageY = containerY + 140;
+            ctx.font = '300 24px "Segoe UI", "Segoe UI Light", "Segoe UI Semilight", sans-serif';
+            ctx.fillText('Your PC ran into a problem and needs to restart. We\'re just collecting some error info, and then we\'ll restart for you.', containerX, messageY);
+            
+            // Progress percentage (24px, light weight)
+            const progressY = messageY + 60;
+            const percentComplete = Math.floor(enhancedBsodState.progress);
+            ctx.fillText(`${percentComplete}% complete`, containerX, progressY);
+            
+            // Draw QR code and details section
+            const qrSize = 120;
+            const qrX = containerX;
+            const qrY = progressY + 60; // Below progress with spacing
+            
+            // QR code with white background padding
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 10);
+            drawQRCode(ctx, qrX, qrY, qrSize);
+            
+            // Details text positioned to the right of QR code
+            const detailsX = qrX + qrSize + 30;
+            const detailsY = qrY;
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = '300 14px "Segoe UI", "Segoe UI Light", "Segoe UI Semilight", sans-serif';
+            ctx.textAlign = 'left';
+            
+            // Draw details text
+            let detailY = detailsY;
+            ctx.fillText('For more information about this issue and possible fixes, visit https://www.windows.com/stopcode', detailsX, detailY);
+            detailY += 20;
+            ctx.fillText('If you call a support person, give them this info:', detailsX, detailY);
+            detailY += 20;
+            ctx.font = '14px "Segoe UI", sans-serif';
+            ctx.fillText('Stop code: ', detailsX, detailY);
+            const stopCodeX = detailsX + ctx.measureText('Stop code: ').width;
+            ctx.font = 'bold 14px "Segoe UI", sans-serif';
+            ctx.fillText('CRITICAL_PROCESS_DIED', stopCodeX, detailY);
             
             ctx.textAlign = 'left';
             break;
