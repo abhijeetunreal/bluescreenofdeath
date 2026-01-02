@@ -13,6 +13,14 @@ let crackLines = [];
 let dvdPos = { x: 100, y: 100, vx: 3, vy: 3, color: '#fff' };
 let currentQuote = "";
 
+// macOS Boot state
+let bootProgress = 0;
+let bootPhase = 'booting'; // 'booting' | 'transitioning' | 'login'
+let bootStartFrame = 0;
+let lastProgressUpdate = 0;
+let nextProgressDelay = 0;
+let transitionOpacity = 0;
+
 export function getCurrentMode() {
     return currentMode;
 }
@@ -106,5 +114,63 @@ export function getCurrentQuote() {
 
 export function setCurrentQuote(quote) {
     currentQuote = quote;
+}
+
+// macOS Boot state functions
+export function getBootProgress() {
+    return bootProgress;
+}
+
+export function setBootProgress(progress) {
+    bootProgress = Math.max(0, Math.min(100, progress));
+}
+
+export function getBootPhase() {
+    return bootPhase;
+}
+
+export function setBootPhase(phase) {
+    bootPhase = phase;
+}
+
+export function getBootStartFrame() {
+    return bootStartFrame;
+}
+
+export function setBootStartFrame(frame) {
+    bootStartFrame = frame;
+}
+
+export function getLastProgressUpdate() {
+    return lastProgressUpdate;
+}
+
+export function setLastProgressUpdate(frame) {
+    lastProgressUpdate = frame;
+}
+
+export function getNextProgressDelay() {
+    return nextProgressDelay;
+}
+
+export function setNextProgressDelay(delay) {
+    nextProgressDelay = delay;
+}
+
+export function getTransitionOpacity() {
+    return transitionOpacity;
+}
+
+export function setTransitionOpacity(opacity) {
+    transitionOpacity = Math.max(0, Math.min(1, opacity));
+}
+
+export function resetBootState() {
+    bootProgress = 0;
+    bootPhase = 'booting';
+    bootStartFrame = 0;
+    lastProgressUpdate = 0;
+    nextProgressDelay = 0;
+    transitionOpacity = 0;
 }
 

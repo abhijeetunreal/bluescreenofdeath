@@ -370,3 +370,21 @@ export function drawMacOSProgressBar(ctx, x, y, width, height, progress) {
     }
 }
 
+// Draw macOS boot progress bar (white fill on dark gray background)
+export function drawMacOSBootProgressBar(ctx, x, y, width, height, progress) {
+    const radius = height / 2;
+    const progressWidth = Math.max(0, Math.min(width, progress * width));
+    
+    // Background (dark gray)
+    ctx.fillStyle = '#333333';
+    drawRoundedRect(ctx, x, y, width, height, radius);
+    ctx.fill();
+    
+    // Progress fill (white)
+    if (progressWidth > 0) {
+        ctx.fillStyle = '#ffffff';
+        drawRoundedRect(ctx, x, y, progressWidth, height, radius);
+        ctx.fill();
+    }
+}
+

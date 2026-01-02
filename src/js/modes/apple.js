@@ -1,7 +1,7 @@
 // Apple modes
 
 import * as state from '../core/state.js';
-import { drawWhiteLogo, drawiOSProgressBar, drawMacOSProgressBar } from '../utils/drawing.js';
+import { drawWhiteLogo, drawiOSProgressBar, drawMacOSProgressBar, drawMacOSBootProgressBar } from '../utils/drawing.js';
 import { imgApple, imgAppleWhite } from '../utils/assets.js';
 import { loadTemplate } from '../utils/template-loader.js';
 import { renderTemplateToCanvas } from '../utils/template-renderer.js';
@@ -19,6 +19,15 @@ export async function initAppleMode(mode, canvas) {
             hue: Math.random() * 360
         }));
         state.setParticles(particles);
+    }
+    
+    if (mode === 'macos_boot') {
+        // Initialize boot state
+        state.resetBootState();
+        state.setBootStartFrame(state.getFrame());
+        state.setLastProgressUpdate(state.getFrame());
+        // Initial delay: 2.5 seconds = 150 frames at 60fps
+        state.setNextProgressDelay(150);
     }
     
     // Preload template for this mode
@@ -189,6 +198,168 @@ export function renderAppleMode(mode, ctx, canvas) {
                 ctx.fillText(`Try again in ${remainingMinutes} ${minuteText}`, canvas.width / 2, canvas.height / 2 + 30);
             } else {
                 ctx.fillText('iPhone is disabled. Connect to iTunes', canvas.width / 2, canvas.height / 2 + 30);
+            }
+            break;
+        }
+        case 'macos_boot': {
+            const bootPhase = state.getBootPhase();
+            const bootProgress = state.getBootProgress();
+            const bootStartFrame = state.getBootStartFrame();
+            const lastProgressUpdate = state.getLastProgressUpdate();
+            const nextProgressDelay = state.getNextProgressDelay();
+            
+            // Update progress with realistic timing
+            if (bootPhase === 'booting') {
+                const framesSinceStart = frame - bootStartFrame;
+                const framesSinceLastUpdate = frame - lastProgressUpdate;
+                
+                // Check if initial delay has passed (2.5 seconds = 150 frames)
+                if (framesSinceStart >= 150 && framesSinceLastUpdate >= nextProgressDelay) {
+                    let increment = 0;
+                    
+                    // Realistic progress behavior matching the HTML example
+                    if (bootProgress < 35) {
+                        // Slow start: 0.1-0.4% increments
+                        increment = Math.random() * 0.3 + 0.1;
+                    } else if (bootProgress >= 35 && bootProgress < 70) {
+                        // "The Leap": 0.5-6.5% increments
+                        increment = Math.random() * 6 + 0.5;
+                    } else if (bootProgress >= 70 && bootProgress < 98) {
+                        // "The Slog": 0.05% increments
+                        increment = 0.05;
+                    } else {
+                        // Final stretch: 0.01% increments
+                        increment = 0.01;
+                    }
+                    
+                    state.setBootProgress(bootProgress + increment);
+                    state.setLastProgressUpdate(frame);
+                    
+                    // Calculate next delay
+                    if (bootProgress < 80) {
+                        // Early: 50-200ms delay (3-12 frames at 60fps)
+                        state.setNextProgressDelay(Math.floor(Math.random() * 9) + 3);
+                    } else {
+                        // Late: 300-1000ms delay (18-60 frames at 60fps)
+                        state.setNextProgressDelay(Math.floor(Math.random() * 42) + 18);
+                    }
+                }
+                
+                // Check if progress reached 100%
+                if (state.getBootProgress() >= 100) {
+                    state.setBootProgress(100);
+                    state.setBootPhase('transitioning');
+                    state.setLastProgressUpdate(frame);
+                }
+            }
+            
+            // Handle transition phase
+            if (bootPhase === 'transitioning') {
+                const framesSinceTransition = frame - state.getLastProgressUpdate();
+                // Transition duration: 1.2 seconds = 72 frames at 60fps
+                if (framesSinceTransition < 72) {
+                    // Fade out boot screen (opacity goes from 1 to 0)
+                    state.setTransitionOpacity(1 - (framesSinceTransition / 72));
+                } else {
+                    // Switch to login screen
+                    state.setBootPhase('login');
+                    state.setTransitionOpacity(0);
+                    state.setLastProgressUpdate(frame);
+                }
+            }
+            
+            // Handle login screen fade in
+            if (bootPhase === 'login') {
+                const framesSinceLogin = frame - state.getLastProgressUpdate();
+                // Fade in duration: 2 seconds = 120 frames at 60fps
+                if (framesSinceLogin < 120) {
+                    state.setTransitionOpacity(framesSinceLogin / 120);
+                } else {
+                    state.setTransitionOpacity(1);
+                }
+            }
+            
+            // Render based on phase
+            if (bootPhase === 'booting' || bootPhase === 'transitioning') {
+                // Render boot screen with fade out during transition
+                const opacity = bootPhase === 'booting' ? 1 : state.getTransitionOpacity();
+                
+                // Render template (black background)
+                const template = templateCache.get(mode);
+                if (template) {
+                    renderTemplateToCanvas(template, ctx, canvas, {});
+                } else {
+                    ctx.fillStyle = '#000000';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+                
+                ctx.save();
+                ctx.globalAlpha = opacity;
+                
+                // Apple logo - precise dimensions: 90px width, 110px height
+                const logoWidth = 90;
+                const logoHeight = 110;
+                const logoX = canvas.width / 2 - logoWidth / 2;
+                const logoY = canvas.height / 2 - logoHeight / 2 - 80; // 80px above center
+                
+                if (imgAppleWhite.complete && imgAppleWhite.naturalWidth > 0) {
+                    ctx.drawImage(imgAppleWhite, logoX, logoY, logoWidth, logoHeight);
+                } else if (imgApple.complete && imgApple.naturalWidth > 0) {
+                    drawWhiteLogo(ctx, imgApple, canvas, logoWidth, -80);
+                }
+                
+                // Progress bar - 250px width, 6px height
+                const barWidth = 250;
+                const barHeight = 6;
+                const barX = canvas.width / 2 - barWidth / 2;
+                const barY = canvas.height / 2 + 50; // 50px below center
+                const progressPercent = state.getBootProgress() / 100;
+                drawMacOSBootProgressBar(ctx, barX, barY, barWidth, barHeight, progressPercent);
+                
+                ctx.restore();
+            } else if (bootPhase === 'login') {
+                // Render login screen with fade in
+                const opacity = state.getTransitionOpacity();
+                
+                ctx.save();
+                ctx.globalAlpha = opacity;
+                
+                // Gradient background (blue to dark blue)
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, '#4b6cb7');
+                gradient.addColorStop(1, '#182848');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // User avatar (circle with emoji)
+                const avatarSize = 100;
+                const avatarX = canvas.width / 2 - avatarSize / 2;
+                const avatarY = canvas.height / 2 - avatarSize / 2 - 20;
+                
+                // Avatar background (semi-transparent white with blur effect)
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.beginPath();
+                ctx.arc(canvas.width / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Avatar border
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // User emoji/icon (draw a simple user icon)
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '40px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('👤', canvas.width / 2, avatarY + avatarSize / 2);
+                
+                // User label
+                ctx.font = '20px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText('User', canvas.width / 2, avatarY + avatarSize + 20);
+                
+                ctx.restore();
             }
             break;
         }
