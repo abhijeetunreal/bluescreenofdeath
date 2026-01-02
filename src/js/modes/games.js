@@ -61,6 +61,8 @@ export async function initGamesMode(mode, canvas) {
         await loadAndInjectCircularMaze();
     } else if (mode === 'maze') {
         await loadAndInjectMaze();
+    } else if (mode === 'neon_boids') {
+        await loadAndInjectNeonBoids();
     }
     
     // Show the game container
@@ -302,6 +304,45 @@ async function loadAndInjectNeonVector() {
 }
 
 /**
+ * Load and inject Neon Boids game
+ */
+async function loadAndInjectNeonBoids() {
+    // Remove existing iframe if present
+    if (gameIframe) {
+        gameIframe.remove();
+        gameIframe = null;
+    }
+    
+    // Create iframe for the Neon Boids game
+    gameIframe = document.createElement('iframe');
+    gameIframe.id = 'neon-boids-iframe';
+    gameIframe.style.cssText = `
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: #000;
+    `;
+    gameIframe.sandbox = 'allow-scripts allow-same-origin allow-forms';
+    
+    // Load the template
+    try {
+        const template = await loadTemplate('neon_boids');
+        if (template && template.html) {
+            // If template has HTML content, use it
+            gameIframe.srcdoc = template.html;
+        } else {
+            // Fallback: load from file directly
+            gameIframe.src = 'src/templates/games/neon_boids.html';
+        }
+    } catch (error) {
+        console.warn('Failed to load Neon Boids template, using direct path:', error);
+        gameIframe.src = 'src/templates/games/neon_boids.html';
+    }
+    
+    gameContainer.appendChild(gameIframe);
+}
+
+/**
  * Load and inject Chess game
  */
 async function loadAndInjectChess() {
@@ -459,6 +500,6 @@ export function cleanupGame() {
  * @returns {boolean} True if the mode is a games mode
  */
 export function isGamesMode(mode) {
-    return mode === 'tetris' || mode === 'snake' || mode === 'pacman' || mode === 'mario' || mode === 'flap' || mode === 'neon_vector' || mode === 'chess' || mode === 'circular_maze' || mode === 'maze' || mode.startsWith('game_');
+    return mode === 'tetris' || mode === 'snake' || mode === 'pacman' || mode === 'mario' || mode === 'flap' || mode === 'neon_vector' || mode === 'neon_boids' || mode === 'chess' || mode === 'circular_maze' || mode === 'maze' || mode.startsWith('game_');
 }
 
