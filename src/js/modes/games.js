@@ -55,6 +55,12 @@ export async function initGamesMode(mode, canvas) {
         await loadAndInjectFlap();
     } else if (mode === 'neon_vector') {
         await loadAndInjectNeonVector();
+    } else if (mode === 'chess') {
+        await loadAndInjectChess();
+    } else if (mode === 'circular_maze') {
+        await loadAndInjectCircularMaze();
+    } else if (mode === 'maze') {
+        await loadAndInjectMaze();
     }
     
     // Show the game container
@@ -296,6 +302,123 @@ async function loadAndInjectNeonVector() {
 }
 
 /**
+ * Load and inject Chess game
+ */
+async function loadAndInjectChess() {
+    // Remove existing iframe if present
+    if (gameIframe) {
+        gameIframe.remove();
+        gameIframe = null;
+    }
+    
+    // Create iframe for the Chess game
+    gameIframe = document.createElement('iframe');
+    gameIframe.id = 'chess-iframe';
+    gameIframe.style.cssText = `
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: #000;
+    `;
+    gameIframe.sandbox = 'allow-scripts allow-same-origin allow-forms';
+    
+    // Load the template
+    try {
+        const template = await loadTemplate('chess');
+        if (template && template.html) {
+            // If template has HTML content, use it
+            gameIframe.srcdoc = template.html;
+        } else {
+            // Fallback: load from file directly
+            gameIframe.src = 'src/templates/games/chess.html';
+        }
+    } catch (error) {
+        console.warn('Failed to load Chess template, using direct path:', error);
+        gameIframe.src = 'src/templates/games/chess.html';
+    }
+    
+    gameContainer.appendChild(gameIframe);
+}
+
+/**
+ * Load and inject Circular Maze game
+ */
+async function loadAndInjectCircularMaze() {
+    // Remove existing iframe if present
+    if (gameIframe) {
+        gameIframe.remove();
+        gameIframe = null;
+    }
+    
+    // Create iframe for the Circular Maze game
+    gameIframe = document.createElement('iframe');
+    gameIframe.id = 'circular-maze-iframe';
+    gameIframe.style.cssText = `
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: #000;
+    `;
+    gameIframe.sandbox = 'allow-scripts allow-same-origin allow-forms';
+    
+    // Load the template
+    try {
+        const template = await loadTemplate('circular_maze');
+        if (template && template.html) {
+            // If template has HTML content, use it
+            gameIframe.srcdoc = template.html;
+        } else {
+            // Fallback: load from file directly
+            gameIframe.src = 'src/templates/games/circular_maze.html';
+        }
+    } catch (error) {
+        console.warn('Failed to load Circular Maze template, using direct path:', error);
+        gameIframe.src = 'src/templates/games/circular_maze.html';
+    }
+    
+    gameContainer.appendChild(gameIframe);
+}
+
+/**
+ * Load and inject Maze game
+ */
+async function loadAndInjectMaze() {
+    // Remove existing iframe if present
+    if (gameIframe) {
+        gameIframe.remove();
+        gameIframe = null;
+    }
+    
+    // Create iframe for the Maze game
+    gameIframe = document.createElement('iframe');
+    gameIframe.id = 'maze-iframe';
+    gameIframe.style.cssText = `
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: #000;
+    `;
+    gameIframe.sandbox = 'allow-scripts allow-same-origin allow-forms';
+    
+    // Load the template
+    try {
+        const template = await loadTemplate('maze');
+        if (template && template.html) {
+            // If template has HTML content, use it
+            gameIframe.srcdoc = template.html;
+        } else {
+            // Fallback: load from file directly
+            gameIframe.src = 'src/templates/games/maze.html';
+        }
+    } catch (error) {
+        console.warn('Failed to load Maze template, using direct path:', error);
+        gameIframe.src = 'src/templates/games/maze.html';
+    }
+    
+    gameContainer.appendChild(gameIframe);
+}
+
+/**
  * Render games mode (games handle their own rendering)
  * @param {string} mode - The game mode name
  * @param {CanvasRenderingContext2D} ctx - The canvas context (not used for games)
@@ -336,6 +459,6 @@ export function cleanupGame() {
  * @returns {boolean} True if the mode is a games mode
  */
 export function isGamesMode(mode) {
-    return mode === 'tetris' || mode === 'snake' || mode === 'pacman' || mode === 'mario' || mode === 'flap' || mode === 'neon_vector' || mode.startsWith('game_');
+    return mode === 'tetris' || mode === 'snake' || mode === 'pacman' || mode === 'mario' || mode === 'flap' || mode === 'neon_vector' || mode === 'chess' || mode === 'circular_maze' || mode === 'maze' || mode.startsWith('game_');
 }
 

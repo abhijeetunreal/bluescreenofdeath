@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Infinite Circular Maze - Neural Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-color: #020617;
+            --wall-color: #0ea5e9;
+            --path-color: #f472b6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #game-container::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%),
+                        radial-gradient(circle, transparent 30%, rgba(0,0,0,0.4) 100%);
+            z-index: 5;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="mazeCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mazeCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+
+        let width, height, centerX, centerY;
+        let ringHeight = 35;
+        let rings = [];
+        let grid = [];
+        let stack = [];
+        let current;
+        let solvingOpenSet = [];
+        let solvingClosedSet = [];
+        let solution = [];
+        let state = 'GENERATING';
+        let endCell;
+        
+        let solveTicks = 0;
+        const SOLVE_SPEED_DIVIDER = 4; // Slower pathfinding
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            centerX = width / 2;
+            centerY = height / 2;
+            
+            initMaze();
+        }
+
+        window.addEventListener('resize', resize);
+
+        class Cell {
+            constructor(r, i, totalInRing) {
+                this.r = r; // Ring index
+                this.i = i; // Cell index in ring
+                this.total = totalInRing;
+                this.visited = false;
+                this.walls = {
+                    inner: true,
+                    outer: true,
+                    clockwise: true,
+                    counterClockwise: true
+                };
+
+                // Neighbors
+                this.neighbors = [];
+
+                // Solver
+                this.parent = null;
+                this.f = 0;
+                this.g = 0;
+                this.h = 0;
+            }
+
+            getAngles() {
+                const anglePerCell = (Math.PI * 2) / this.total;
+                const startAngle = this.i * anglePerCell;
+                const endAngle = (this.i + 1) * anglePerCell;
+                return { start: startAngle, end: endAngle };
+            }
+
+            draw(isHighlight = false, color = null) {
+                const { start, end } = this.getAngles();
+                const innerR = this.r * ringHeight;
+                const outerR = (this.r + 1) * ringHeight;
+
+                if (isHighlight) {
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, outerR - 2, start, end);
+                    ctx.arc(centerX, centerY, innerR + 2, end, start, true);
+                    ctx.fill();
+                    return;
+                }
+
+                if (this.visited) {
+                    ctx.fillStyle = '#0f172a';
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, outerR, start, end);
+                    ctx.arc(centerX, centerY, innerR, end, start, true);
+                    ctx.fill();
+                }
+
+                ctx.strokeStyle = '#0ea5e9';
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+
+                ctx.beginPath();
+                if (this.walls.inner && this.r > 0) {
+                    ctx.arc(centerX, centerY, innerR, start, end);
+                }
+                if (this.walls.clockwise) {
+                    ctx.moveTo(centerX + Math.cos(end) * innerR, centerY + Math.sin(end) * innerR);
+                    ctx.lineTo(centerX + Math.cos(end) * outerR, centerY + Math.sin(end) * outerR);
+                }
+                ctx.stroke();
+            }
+        }
+
+        function initMaze() {
+            grid = [];
+            const maxRadius = Math.min(width, height) * 0.45;
+            const ringCount = Math.floor(maxRadius / ringHeight);
+            
+            let cellsInRing = 8;
+            for (let r = 0; r < ringCount; r++) {
+                const ringCells = [];
+                // Double the number of cells when the circumference gets too large for current cell density
+                if (r > 0 && (r * ringHeight * Math.PI * 2) / cellsInRing > ringHeight * 1.5) {
+                    cellsInRing *= 2;
+                }
+
+                for (let i = 0; i < cellsInRing; i++) {
+                    const cell = new Cell(r, i, cellsInRing);
+                    grid.push(cell);
+                    ringCells.push(cell);
+                }
+                rings.push(ringCells);
+            }
+
+            // Link Neighbors
+            for (let r = 0; r < rings.length; r++) {
+                for (let i = 0; i < rings[r].length; i++) {
+                    const cell = rings[r][i];
+                    
+                    // Clockwise / Counter
+                    cell.neighbors.push(rings[r][(i + 1) % rings[r].length]);
+                    cell.neighbors.push(rings[r][(i - 1 + rings[r].length) % rings[r].length]);
+
+                    // Inner
+                    if (r > 0) {
+                        const prevRing = rings[r - 1];
+                        const ratio = prevRing.length / rings[r].length;
+                        cell.neighbors.push(prevRing[Math.floor(i * ratio)]);
+                    }
+
+                    // Outer
+                    if (r < rings.length - 1) {
+                        const nextRing = rings[r + 1];
+                        const ratio = nextRing.length / rings[r].length;
+                        const start = Math.floor(i * ratio);
+                        const end = Math.floor((i + 1) * ratio);
+                        for (let j = start; j < end; j++) {
+                            cell.neighbors.push(nextRing[j]);
+                        }
+                    }
+                }
+            }
+
+            current = grid[0];
+            current.visited = true;
+            stack = [];
+            solution = [];
+            solvingOpenSet = [grid[0]];
+            solvingClosedSet = [];
+            endCell = grid[grid.length - 1];
+            state = 'GENERATING';
+        }
+
+        function removeWallsBetween(a, b) {
+            if (a.r === b.r) {
+                // Same ring
+                const diff = (b.i - a.i + a.total) % a.total;
+                if (diff === 1) { a.walls.clockwise = false; b.walls.counterClockwise = false; }
+                else { a.walls.counterClockwise = false; b.walls.clockwise = false; }
+            } else {
+                // Different rings
+                if (a.r < b.r) { a.walls.outer = false; b.walls.inner = false; }
+                else { a.walls.inner = false; b.walls.outer = false; }
+            }
+        }
+
+        function update() {
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw Base Maze
+            for (let i = 0; i < grid.length; i++) grid[i].draw();
+
+            if (state === 'GENERATING') {
+                for (let k = 0; k < 10; k++) {
+                    const unvisited = current.neighbors.filter(n => !n.visited);
+                    if (unvisited.length > 0) {
+                        const next = unvisited[Math.floor(Math.random() * unvisited.length)];
+                        next.visited = true;
+                        stack.push(current);
+                        removeWallsBetween(current, next);
+                        current = next;
+                    } else if (stack.length > 0) {
+                        current = stack.pop();
+                    } else {
+                        state = 'SOLVING';
+                        break;
+                    }
+                }
+                current.draw(true, '#22d3ee');
+            } else if (state === 'SOLVING') {
+                solveTicks++;
+                if (solveTicks % SOLVE_SPEED_DIVIDER === 0) {
+                    if (solvingOpenSet.length > 0) {
+                        let winner = 0;
+                        for (let i = 0; i < solvingOpenSet.length; i++) {
+                            if (solvingOpenSet[i].f < solvingOpenSet[winner].f) winner = i;
+                        }
+                        const currentSolve = solvingOpenSet[winner];
+
+                        if (currentSolve === endCell) {
+                            reconstructPath(currentSolve);
+                            state = 'FINISHED';
+                            setTimeout(() => { rings = []; resize(); }, 5000);
+                        } else {
+                            solvingOpenSet.splice(winner, 1);
+                            solvingClosedSet.push(currentSolve);
+
+                            const neighbors = getMovableNeighbors(currentSolve);
+                            for (let n of neighbors) {
+                                if (!solvingClosedSet.includes(n)) {
+                                    const tempG = currentSolve.g + 1;
+                                    let newPath = false;
+                                    if (solvingOpenSet.includes(n)) {
+                                        if (tempG < n.g) { n.g = tempG; newPath = true; }
+                                    } else {
+                                        n.g = tempG; n.parent = currentSolve;
+                                        newPath = true; solvingOpenSet.push(n);
+                                    }
+                                    if (newPath) {
+                                        n.h = Math.abs(n.r - endCell.r) + Math.abs(n.i - endCell.i);
+                                        n.f = n.g + n.h;
+                                    }
+                                }
+                            }
+                            reconstructPath(currentSolve);
+                        }
+                    }
+                }
+
+                solvingClosedSet.forEach(c => c.draw(true, 'rgba(244, 114, 182, 0.1)'));
+                
+                // Draw path line
+                if (solution.length > 0) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#f472b6';
+                    ctx.lineWidth = 4;
+                    const first = solution[0].getAngles();
+                    const firstR = (solution[0].r + 0.5) * ringHeight;
+                    const firstA = (first.start + first.end) / 2;
+                    ctx.moveTo(centerX + Math.cos(firstA) * firstR, centerY + Math.sin(firstA) * firstR);
+                    
+                    for(let i=1; i<solution.length; i++) {
+                        const s = solution[i].getAngles();
+                        const r = (solution[i].r + 0.5) * ringHeight;
+                        const a = (s.start + s.end) / 2;
+                        ctx.lineTo(centerX + Math.cos(a) * r, centerY + Math.sin(a) * r);
+                    }
+                    ctx.stroke();
+                }
+            } else if (state === 'FINISHED') {
+                ctx.beginPath();
+                ctx.strokeStyle = '#f472b6';
+                ctx.lineWidth = 6;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#f472b6';
+                const s0 = solution[0].getAngles();
+                const r0 = (solution[0].r + 0.5) * ringHeight;
+                const a0 = (s0.start + s0.end) / 2;
+                ctx.moveTo(centerX + Math.cos(a0) * r0, centerY + Math.sin(a0) * r0);
+                for(let i=1; i<solution.length; i++) {
+                    const s = solution[i].getAngles();
+                    const r = (solution[i].r + 0.5) * ringHeight;
+                    const a = (s.start + s.end) / 2;
+                    ctx.lineTo(centerX + Math.cos(a) * r, centerY + Math.sin(a) * r);
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        function getMovableNeighbors(cell) {
+            const res = [];
+            const { inner, outer, clockwise, counterClockwise } = cell.walls;
+            // Neighbors list is built during init, check walls to see if move is allowed
+            // This is a simplified check: we check if the neighbor is clockwise, inner, etc.
+            cell.neighbors.forEach(n => {
+                if (n.r === cell.r) {
+                    const diff = (n.i - cell.i + cell.total) % cell.total;
+                    if (diff === 1 && !cell.walls.clockwise) res.push(n);
+                    if (diff === cell.total - 1 && !cell.walls.counterClockwise) res.push(n);
+                } else if (n.r < cell.r && !cell.walls.inner) {
+                    res.push(n);
+                } else if (n.r > cell.r && !cell.walls.outer) {
+                    // Check if the specific outer neighbor is reachable (b/c multiple outer per inner)
+                    // In our case, we remove outer wall globally for that cell
+                    res.push(n);
+                }
+            });
+            return res;
+        }
+
+        function reconstructPath(cell) {
+            solution = [];
+            let temp = cell;
+            while (temp) {
+                solution.push(temp);
+                temp = temp.parent;
+            }
+        }
+
+        resize();
+        update();
+    </script>
+</body>
+</html>
+

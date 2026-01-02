@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Infinite Maze - High Performance Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-color: #020617;
+            --wall-color: #0ea5e9;
+            --visited-bg: #0f172a;
+            --neon-primary: #22d3ee;
+            --neon-secondary: #f472b6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            display: block;
+            image-rendering: auto;
+        }
+
+        #game-container::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%),
+                        radial-gradient(circle, transparent 40%, rgba(0,0,0,0.3) 100%);
+            z-index: 5;
+            background-size: 100% 4px, 100% 100%;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="mazeCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mazeCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false }); 
+
+        let width, height;
+        let cols, rows;
+        let cellSize = 30; 
+        let grid = [];
+        let stack = [];
+        let current;
+        let solvingOpenSet = [];
+        let solvingClosedSet = [];
+        let solution = [];
+        let state = 'GENERATING'; 
+        let endCell;
+        
+        // Pace control variables
+        let solveTicks = 0;
+        const SOLVE_SPEED_DIVIDER = 3; // Lower means faster, higher means slower (1 step every X frames)
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            
+            cols = Math.floor(width / cellSize);
+            rows = Math.floor(height / cellSize);
+            
+            initMaze();
+        }
+
+        window.addEventListener('resize', resize);
+
+        class Cell {
+            constructor(i, j) {
+                this.i = i;
+                this.j = j;
+                this.walls = [true, true, true, true]; // top, right, bottom, left
+                this.visited = false;
+                
+                this.parent = null;
+                this.f = 0;
+                this.g = 0;
+                this.h = 0;
+            }
+
+            draw() {
+                const x = this.i * cellSize;
+                const y = this.j * cellSize;
+                
+                if (this.visited) {
+                    ctx.fillStyle = '#0f172a';
+                    ctx.fillRect(x, y, cellSize, cellSize);
+                } else {
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 0.5;
+                    ctx.strokeRect(x, y, cellSize, cellSize);
+                }
+
+                ctx.strokeStyle = '#0ea5e9'; 
+                ctx.lineWidth = 2;
+                
+                ctx.beginPath();
+                if (this.walls[0]) { ctx.moveTo(x, y); ctx.lineTo(x + cellSize, y); }
+                if (this.walls[1]) { ctx.moveTo(x + cellSize, y); ctx.lineTo(x + cellSize, y + cellSize); }
+                if (this.walls[2]) { ctx.moveTo(x + cellSize, y + cellSize); ctx.lineTo(x, y + cellSize); }
+                if (this.walls[3]) { ctx.moveTo(x, y + cellSize); ctx.lineTo(x, y); }
+                ctx.stroke();
+            }
+
+            highlight(color) {
+                const x = this.i * cellSize;
+                const y = this.j * cellSize;
+                ctx.fillStyle = color;
+                ctx.fillRect(x + 3, y + 3, cellSize - 6, cellSize - 6);
+            }
+        }
+
+        function index(i, j) {
+            if (i < 0 || j < 0 || i > cols - 1 || j > rows - 1) return -1;
+            return i + j * cols;
+        }
+
+        function removeWalls(a, b) {
+            const x = a.i - b.i;
+            if (x === 1) { a.walls[3] = false; b.walls[1] = false; }
+            else if (x === -1) { a.walls[1] = false; b.walls[3] = false; }
+            
+            const y = a.j - b.j;
+            if (y === 1) { a.walls[0] = false; b.walls[2] = false; }
+            else if (y === -1) { a.walls[2] = false; b.walls[0] = false; }
+        }
+
+        function initMaze() {
+            grid = [];
+            for (let j = 0; j < rows; j++) {
+                for (let i = 0; i < cols; i++) {
+                    grid.push(new Cell(i, j));
+                }
+            }
+            current = grid[0];
+            current.visited = true;
+            stack = [];
+            solution = [];
+            solvingOpenSet = [grid[0]];
+            solvingClosedSet = [];
+            endCell = grid[grid.length - 1];
+            state = 'GENERATING';
+            solveTicks = 0;
+        }
+
+        function update() {
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, width, height);
+
+            for (let i = 0; i < grid.length; i++) {
+                grid[i].draw();
+            }
+
+            if (state === 'GENERATING') {
+                // Keep generation relatively fast but controlled
+                for (let k = 0; k < 12; k++) {
+                    const next = getNeighbors(current);
+                    if (next) {
+                        next.visited = true;
+                        stack.push(current);
+                        removeWalls(current, next);
+                        current = next;
+                    } else if (stack.length > 0) {
+                        current = stack.pop();
+                    } else {
+                        state = 'SOLVING';
+                        break;
+                    }
+                }
+                current.highlight('#22d3ee');
+            } else if (state === 'SOLVING') {
+                // Pathfinding Speed Reduction: Only execute A* logic every few frames
+                solveTicks++;
+                if (solveTicks % SOLVE_SPEED_DIVIDER === 0) {
+                    if (solvingOpenSet.length > 0) {
+                        let winner = 0;
+                        for (let i = 0; i < solvingOpenSet.length; i++) {
+                            if (solvingOpenSet[i].f < solvingOpenSet[winner].f) winner = i;
+                        }
+
+                        const currentSolve = solvingOpenSet[winner];
+
+                        if (currentSolve === endCell) {
+                            reconstructPath(currentSolve);
+                            state = 'FINISHED';
+                            setTimeout(initMaze, 5000);
+                        } else {
+                            solvingOpenSet.splice(winner, 1);
+                            solvingClosedSet.push(currentSolve);
+
+                            const neighbors = getMovableNeighbors(currentSolve);
+                            for (let n of neighbors) {
+                                if (!solvingClosedSet.includes(n)) {
+                                    const tempG = currentSolve.g + 1;
+                                    let newPath = false;
+                                    if (solvingOpenSet.includes(n)) {
+                                        if (tempG < n.g) { n.g = tempG; newPath = true; }
+                                    } else {
+                                        n.g = tempG;
+                                        newPath = true;
+                                        solvingOpenSet.push(n);
+                                    }
+                                    if (newPath) {
+                                        n.h = Math.abs(n.i - endCell.i) + Math.abs(n.j - endCell.j);
+                                        n.f = n.g + n.h;
+                                        n.parent = currentSolve;
+                                    }
+                                }
+                            }
+                            reconstructPath(currentSolve);
+                        }
+                    }
+                }
+
+                // Render current search area with a fading neon effect
+                solvingClosedSet.forEach(c => c.highlight('rgba(244, 114, 182, 0.15)'));
+
+                // Render current "active" node being evaluated
+                if (solvingOpenSet.length > 0) {
+                    const winner = solvingOpenSet.reduce((prev, curr) => prev.f < curr.f ? prev : curr);
+                    winner.highlight('rgba(255, 255, 255, 0.4)');
+                }
+
+                // Render solution path
+                if (solution.length > 0) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#f472b6';
+                    ctx.lineWidth = 4;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.moveTo(solution[0].i * cellSize + cellSize/2, solution[0].j * cellSize + cellSize/2);
+                    for(let i=1; i<solution.length; i++) {
+                        ctx.lineTo(solution[i].i * cellSize + cellSize/2, solution[i].j * cellSize + cellSize/2);
+                    }
+                    ctx.stroke();
+                }
+            } else if (state === 'FINISHED') {
+                ctx.beginPath();
+                ctx.strokeStyle = '#f472b6';
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#f472b6';
+                ctx.moveTo(solution[0].i * cellSize + cellSize/2, solution[0].j * cellSize + cellSize/2);
+                for(let i=1; i<solution.length; i++) {
+                    ctx.lineTo(solution[i].i * cellSize + cellSize/2, solution[i].j * cellSize + cellSize/2);
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        function getNeighbors(cell) {
+            const neighbors = [];
+            const top = grid[index(cell.i, cell.j - 1)];
+            const right = grid[index(cell.i + 1, cell.j)];
+            const bottom = grid[index(cell.i, cell.j + 1)];
+            const left = grid[index(cell.i - 1, cell.j)];
+
+            if (top && !top.visited) neighbors.push(top);
+            if (right && !right.visited) neighbors.push(right);
+            if (bottom && !bottom.visited) neighbors.push(bottom);
+            if (left && !left.visited) neighbors.push(left);
+
+            if (neighbors.length > 0) {
+                return neighbors[Math.floor(Math.random() * neighbors.length)];
+            }
+            return undefined;
+        }
+
+        function getMovableNeighbors(cell) {
+            const res = [];
+            if (!cell.walls[0]) res.push(grid[index(cell.i, cell.j - 1)]);
+            if (!cell.walls[1]) res.push(grid[index(cell.i + 1, cell.j)]);
+            if (!cell.walls[2]) res.push(grid[index(cell.i, cell.j + 1)]);
+            if (!cell.walls[3]) res.push(grid[index(cell.i - 1, cell.j)]);
+            return res;
+        }
+
+        function reconstructPath(cell) {
+            solution = [];
+            let temp = cell;
+            solution.push(temp);
+            while (temp.parent) {
+                solution.push(temp.parent);
+                temp = temp.parent;
+            }
+        }
+
+        resize();
+        update();
+
+    </script>
+</body>
+</html>
+
