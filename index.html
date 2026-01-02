@@ -6,16 +6,10 @@
     <title>The Ultimate Screen Tool</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body id="mainBody">
+<body id="mainBody" class="home-view">
 
-    <canvas id="colorCanvas" role="img" aria-label="Screen display canvas"></canvas>
+    <canvas id="colorCanvas" role="img" aria-label="Screen display canvas" class="hidden"></canvas>
 
-    <!-- Mobile Menu Button -->
-    <button id="mobileMenuBtn" class="mobile-menu-btn fixed top-[calc(15px+env(safe-area-inset-top))] right-[calc(15px+env(safe-area-inset-right))] w-[50px] h-[50px] bg-bgUi backdrop-blur-[25px] border border-borderUi rounded-xl cursor-pointer z-[2001] flex flex-col justify-center items-center gap-[5px] p-3 shadow-[0_10px_30px_rgba(0,0,0,0.5)] touch-manipulation transition-all duration-300 ease-in-out hover:bg-white/15" onclick="toggleMobileMenu()" aria-label="Menu">
-        <span class="block w-6 h-0.5 bg-text rounded-sm transition-all duration-300 ease-in-out"></span>
-        <span class="block w-6 h-0.5 bg-text rounded-sm transition-all duration-300 ease-in-out"></span>
-        <span class="block w-6 h-0.5 bg-text rounded-sm transition-all duration-300 ease-in-out"></span>
-    </button>
 
     <!-- Desktop UI Container -->
     <div id="ui-container" class="desktop-ui fixed top-5 left-1/2 -translate-x-1/2 bg-bgUi backdrop-blur-[25px] px-3 py-1.5 rounded-[50px] flex items-center flex-wrap justify-center gap-2 border border-borderUi transition-[opacity,transform] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] z-[2000] select-none shadow-[0_15px_50px_rgba(0,0,0,0.8)] opacity-100 max-w-[95vw] min-w-min hover:pointer-events-auto hover:-translate-x-1/2 hover:translate-y-0 sm:px-3.5 sm:py-2 sm:gap-2.5 sm:top-4 max-[480px]:hidden max-[480px]:px-2.5 max-[480px]:py-2 max-[480px]:gap-1.5 max-[480px]:top-2.5 max-[480px]:rounded-[25px] max-[480px]:max-w-[calc(100vw-20px)] lg:px-4 lg:gap-2.5">
@@ -94,7 +88,7 @@
         </div>
         
         <div class="divider w-px h-6 bg-white/20 mx-1.5 max-[480px]:h-5 max-[480px]:mx-1"></div>
-        <button id="homeBtn" class="bg-white/8 text-text border border-white/10 px-3.5 py-1.5 rounded-[20px] cursor-pointer text-[0.625rem] font-semibold uppercase tracking-[0.5px] min-h-11 min-w-11 touch-manipulation hover:bg-white/18 transition-all duration-200 max-[480px]:px-3 max-[480px]:py-2 max-[480px]:text-[0.5625rem] max-[480px]:min-h-11 max-[480px]:min-w-[50px]" onclick="showHomeOverlay()" aria-label="Show home page">Home</button>
+        <button id="homeBtn" class="bg-white/8 text-text border border-white/10 px-3.5 py-1.5 rounded-[20px] cursor-pointer text-[0.625rem] font-semibold uppercase tracking-[0.5px] min-h-11 min-w-11 touch-manipulation hover:bg-white/18 transition-all duration-200 max-[480px]:px-3 max-[480px]:py-2 max-[480px]:text-[0.5625rem] max-[480px]:min-h-11 max-[480px]:min-w-[50px]" onclick="showHomePage()" aria-label="Show home page">Home</button>
         <button id="fsBtn" class="bg-white text-black border-0 px-4 py-1.75 rounded-[20px] cursor-pointer text-[0.625rem] font-extrabold uppercase min-h-11 min-w-11 touch-manipulation max-[480px]:px-3.5 max-[480px]:py-2 max-[480px]:text-[0.5625rem] max-[480px]:min-h-11 max-[480px]:min-w-[50px]" onclick="toggleFullscreen()" aria-label="Toggle fullscreen mode">FS</button>
     </div>
 
@@ -184,7 +178,7 @@
                 </div>
 
                 <div class="flex gap-2 mt-4 mb-2">
-                    <button class="flex-1 py-3 rounded-xl bg-white/10 border border-white/20 text-text font-semibold text-sm active:bg-white/15" onclick="showHomeOverlay(); closeMobileMenu();">Home</button>
+                    <button class="flex-1 py-3 rounded-xl bg-white/10 border border-white/20 text-text font-semibold text-sm active:bg-white/15" onclick="showHomePage(); closeMobileMenu();">Home</button>
                     <button class="flex-1 py-3 rounded-xl bg-white text-black font-semibold text-sm active:opacity-90" onclick="toggleFullscreen(); closeMobileMenu();">Fullscreen</button>
                     <button class="flex-1 py-3 rounded-xl bg-white/10 border border-white/20 text-text font-semibold text-sm active:bg-white/15" onclick="setMode('color', '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')); closeMobileMenu();">Random</button>
                 </div>
@@ -195,127 +189,150 @@
     <!-- Mobile Menu Overlay -->
     <div id="mobileMenuOverlay" class="mobile-menu-overlay fixed top-0 left-0 w-full h-full bg-black/70 backdrop-blur-sm z-[1998] opacity-0 transition-opacity duration-300 ease-in-out" onclick="toggleMobileMenu()"></div>
 
-    <!-- Home Overlay -->
-    <div id="homeOverlay" class="home-overlay fixed inset-0 z-[3000] bg-black/80 backdrop-blur-md opacity-0 invisible transition-all duration-500 ease-in-out overflow-y-auto">
-        <div class="min-h-full flex items-center justify-center p-4 sm:p-6 lg:p-8">
-            <div class="home-overlay-content w-full max-w-4xl bg-bgUi backdrop-blur-[25px] border border-borderUi rounded-3xl shadow-2xl p-6 sm:p-8 lg:p-10 my-8 transform scale-95 transition-transform duration-500">
-                <!-- Close Button -->
-                <button id="homeOverlayClose" class="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 flex items-center justify-center text-text/60 hover:text-text bg-white/5 hover:bg-white/10 rounded-full transition-all duration-200" aria-label="Close">
-                    <span class="text-2xl leading-none">×</span>
-                </button>
-
-                <!-- Hero Section -->
-                <div class="text-center mb-8 sm:mb-10">
-                    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4">The Ultimate Screen Tool</h1>
-                    <p class="text-text/80 text-base sm:text-lg max-w-2xl mx-auto">Transform your screen with realistic BSOD screens, system simulations, games, pranks, and more. Perfect for presentations, pranks, or just having fun!</p>
+    <!-- Home Page -->
+    <div id="homePage" class="home-page fixed inset-0 z-[1000] bg-black overflow-y-auto">
+        <div class="min-h-full tom-jerry-bg">
+            <!-- Hero Section -->
+            <section class="hero-section pt-16 sm:pt-20 lg:pt-24 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8">
+                <div class="max-w-6xl mx-auto text-center">
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tom-jerry-title mb-4 sm:mb-6">The Ultimate Screen Tool</h1>
+                    <p class="tom-jerry-text text-lg sm:text-xl lg:text-2xl max-w-3xl mx-auto mb-8 sm:mb-10">Transform your screen with realistic BSOD screens, system simulations, games, pranks, and more. Perfect for presentations, pranks, or just having fun!</p>
                 </div>
+            </section>
 
-                <!-- Quick Start Section -->
-                <div class="mb-8 sm:mb-10">
-                    <h2 class="text-xl sm:text-2xl font-semibold text-white mb-4 sm:mb-5 flex items-center gap-2">
-                        <span class="text-2xl">🚀</span>
+            <!-- Category Cards Section -->
+            <section class="category-section py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+                <div class="max-w-6xl mx-auto">
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-semibold tom-jerry-heading mb-6 sm:mb-8 text-center">Choose a Category</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                        <!-- Windows Card -->
+                        <div class="category-card group rounded-2xl p-6 sm:p-8 cursor-pointer transition-all duration-300" data-category="windows">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="text-4xl sm:text-5xl">🪟</div>
+                                <div>
+                                    <h3 class="text-xl sm:text-2xl font-bold mb-1">Windows</h3>
+                                    <p class="tom-jerry-text text-sm opacity-70">6 modes</p>
+                                </div>
+                            </div>
+                            <p class="tom-jerry-text text-sm sm:text-base mb-4">BSOD screens, boot sequences, BIOS screens, and loading animations from Windows XP to Windows 11.</p>
+                            <div class="flex items-center tom-jerry-text opacity-60 group-hover:opacity-100 transition-colors">
+                                <span class="text-sm font-medium">Explore →</span>
+                            </div>
+                        </div>
+
+                        <!-- Apple Card -->
+                        <div class="category-card group rounded-2xl p-6 sm:p-8 cursor-pointer transition-all duration-300" data-category="apple">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="text-4xl sm:text-5xl">🍎</div>
+                                <div>
+                                    <h3 class="text-xl sm:text-2xl font-bold mb-1">Apple</h3>
+                                    <p class="tom-jerry-text text-sm opacity-70">6 modes</p>
+                                </div>
+                            </div>
+                            <p class="tom-jerry-text text-sm sm:text-base mb-4">macOS boot screens, kernel panics, iOS updates, and iPhone disabled screens.</p>
+                            <div class="flex items-center tom-jerry-text opacity-60 group-hover:opacity-100 transition-colors">
+                                <span class="text-sm font-medium">Explore →</span>
+                            </div>
+                        </div>
+
+                        <!-- Games Card -->
+                        <div class="category-card group rounded-2xl p-6 sm:p-8 cursor-pointer transition-all duration-300" data-category="games">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="text-4xl sm:text-5xl">🎮</div>
+                                <div>
+                                    <h3 class="text-xl sm:text-2xl font-bold mb-1">Games</h3>
+                                    <p class="tom-jerry-text text-sm opacity-70">11 modes</p>
+                                </div>
+                            </div>
+                            <p class="tom-jerry-text text-sm sm:text-base mb-4">Play classic games like Tetris, Snake, Pac-Man, Mario, Chess, and more right in your browser.</p>
+                            <div class="flex items-center tom-jerry-text opacity-60 group-hover:opacity-100 transition-colors">
+                                <span class="text-sm font-medium">Explore →</span>
+                            </div>
+                        </div>
+
+                        <!-- Pranks Card -->
+                        <div class="category-card group rounded-2xl p-6 sm:p-8 cursor-pointer transition-all duration-300" data-category="pranks">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="text-4xl sm:text-5xl">😈</div>
+                                <div>
+                                    <h3 class="text-xl sm:text-2xl font-bold mb-1">Pranks</h3>
+                                    <p class="tom-jerry-text text-sm opacity-70">5 modes</p>
+                                </div>
+                            </div>
+                            <p class="tom-jerry-text text-sm sm:text-base mb-4">Broken screen effects, white noise, radar screens, hacker typer, and "No Signal" displays.</p>
+                            <div class="flex items-center tom-jerry-text opacity-60 group-hover:opacity-100 transition-colors">
+                                <span class="text-sm font-medium">Explore →</span>
+                            </div>
+                        </div>
+
+                        <!-- More Card -->
+                        <div class="category-card group rounded-2xl p-6 sm:p-8 cursor-pointer transition-all duration-300 sm:col-span-2 lg:col-span-1" data-category="more">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="text-4xl sm:text-5xl">➕</div>
+                                <div>
+                                    <h3 class="text-xl sm:text-2xl font-bold mb-1">More</h3>
+                                    <p class="tom-jerry-text text-sm opacity-70">6 modes</p>
+                                </div>
+                            </div>
+                            <p class="tom-jerry-text text-sm sm:text-base mb-4">Ubuntu, Chrome OS, Matrix Rain, DVD Bouncing, Flip Clock, and inspirational quotes.</p>
+                            <div class="flex items-center tom-jerry-text opacity-60 group-hover:opacity-100 transition-colors">
+                                <span class="text-sm font-medium">Explore →</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Start Section -->
+            <section class="quick-start-section py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+                <div class="max-w-6xl mx-auto">
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-semibold tom-jerry-heading mb-6 sm:mb-8 flex items-center gap-3">
+                        <span class="text-3xl sm:text-4xl">🚀</span>
                         Quick Start
                     </h2>
-                    <div class="space-y-3 sm:space-y-4">
-                        <div class="flex items-start gap-3 sm:gap-4 bg-white/5 rounded-xl p-4 border border-white/10">
-                            <span class="text-xl sm:text-2xl flex-shrink-0">1️⃣</span>
-                            <div>
-                                <h3 class="text-white font-medium mb-1">Select a Mode</h3>
-                                <p class="text-text/70 text-sm sm:text-base">Use the menu buttons at the top (Windows, Apple, Games, Pranks, More) to choose from dozens of screen effects and simulations.</p>
-                            </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                        <div class="tom-jerry-card rounded-xl p-6">
+                            <div class="text-3xl sm:text-4xl mb-4">1️⃣</div>
+                            <h3 class="tom-jerry-heading font-semibold text-lg mb-2">Select a Mode</h3>
+                            <p class="tom-jerry-text text-sm sm:text-base">Click on any category card above to explore and choose from dozens of screen effects and simulations.</p>
                         </div>
-                        <div class="flex items-start gap-3 sm:gap-4 bg-white/5 rounded-xl p-4 border border-white/10">
-                            <span class="text-xl sm:text-2xl flex-shrink-0">2️⃣</span>
-                            <div>
-                                <h3 class="text-white font-medium mb-1">Go Fullscreen</h3>
-                                <p class="text-text/70 text-sm sm:text-base">Click the "FS" button or use the mobile menu to enter fullscreen mode for the best experience.</p>
-                            </div>
+                        <div class="tom-jerry-card rounded-xl p-6">
+                            <div class="text-3xl sm:text-4xl mb-4">2️⃣</div>
+                            <h3 class="tom-jerry-heading font-semibold text-lg mb-2">Go Fullscreen</h3>
+                            <p class="tom-jerry-text text-sm sm:text-base">Click the "FS" button or use the mobile menu to enter fullscreen mode for the best experience.</p>
                         </div>
-                        <div class="flex items-start gap-3 sm:gap-4 bg-white/5 rounded-xl p-4 border border-white/10">
-                            <span class="text-xl sm:text-2xl flex-shrink-0">3️⃣</span>
-                            <div>
-                                <h3 class="text-white font-medium mb-1">Customize Colors</h3>
-                                <p class="text-text/70 text-sm sm:text-base">Use the color swatches (Black, White, Custom) to set a solid color background anytime.</p>
-                            </div>
+                        <div class="tom-jerry-card rounded-xl p-6">
+                            <div class="text-3xl sm:text-4xl mb-4">3️⃣</div>
+                            <h3 class="tom-jerry-heading font-semibold text-lg mb-2">Customize Colors</h3>
+                            <p class="tom-jerry-text text-sm sm:text-base">Use the color swatches (Black, White, Custom) to set a solid color background anytime.</p>
                         </div>
                     </div>
                 </div>
+            </section>
 
-                <!-- Features Overview -->
-                <div class="mb-8 sm:mb-10">
-                    <h2 class="text-xl sm:text-2xl font-semibold text-white mb-4 sm:mb-5 flex items-center gap-2">
-                        <span class="text-2xl">✨</span>
-                        Features
-                    </h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                        <div class="bg-white/5 rounded-xl p-4 border border-white/10">
-                            <h3 class="text-white font-medium mb-2 flex items-center gap-2">
-                                <span>🪟</span>
-                                Windows
-                            </h3>
-                            <p class="text-text/70 text-sm">BSOD screens, boot sequences, BIOS screens, and loading animations from Windows XP to Windows 11.</p>
-                        </div>
-                        <div class="bg-white/5 rounded-xl p-4 border border-white/10">
-                            <h3 class="text-white font-medium mb-2 flex items-center gap-2">
-                                <span>🍎</span>
-                                Apple
-                            </h3>
-                            <p class="text-text/70 text-sm">macOS boot screens, kernel panics, iOS updates, and iPhone disabled screens.</p>
-                        </div>
-                        <div class="bg-white/5 rounded-xl p-4 border border-white/10">
-                            <h3 class="text-white font-medium mb-2 flex items-center gap-2">
-                                <span>🎮</span>
-                                Games
-                            </h3>
-                            <p class="text-text/70 text-sm">Play classic games like Tetris, Snake, Pac-Man, Mario, Chess, and more right in your browser.</p>
-                        </div>
-                        <div class="bg-white/5 rounded-xl p-4 border border-white/10">
-                            <h3 class="text-white font-medium mb-2 flex items-center gap-2">
-                                <span>😈</span>
-                                Pranks
-                            </h3>
-                            <p class="text-text/70 text-sm">Broken screen effects, white noise, radar screens, hacker typer, and "No Signal" displays.</p>
-                        </div>
-                        <div class="bg-white/5 rounded-xl p-4 border border-white/10 sm:col-span-2">
-                            <h3 class="text-white font-medium mb-2 flex items-center gap-2">
-                                <span>➕</span>
-                                More
-                            </h3>
-                            <p class="text-text/70 text-sm">Ubuntu, Chrome OS, Matrix Rain, DVD Bouncing, Flip Clock, and inspirational quotes.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tips Section -->
-                <div class="mb-8 sm:mb-10">
-                    <h2 class="text-xl sm:text-2xl font-semibold text-white mb-4 sm:mb-5 flex items-center gap-2">
-                        <span class="text-2xl">💡</span>
+            <!-- Tips & Tricks Section -->
+            <section class="tips-section py-8 sm:py-12 px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
+                <div class="max-w-6xl mx-auto">
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-semibold tom-jerry-heading mb-6 sm:mb-8 flex items-center gap-3">
+                        <span class="text-3xl sm:text-4xl">💡</span>
                         Tips & Tricks
                     </h2>
-                    <div class="space-y-3 sm:space-y-4">
-                        <div class="bg-white/5 rounded-xl p-4 border border-white/10">
-                            <p class="text-text/80 text-sm sm:text-base"><strong class="text-white">UI Auto-Hide:</strong> The menu automatically hides after a few seconds of inactivity. Move your mouse to bring it back.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                        <div class="tom-jerry-card rounded-xl p-6">
+                            <p class="tom-jerry-text text-sm sm:text-base"><strong class="tom-jerry-heading">UI Auto-Hide:</strong> The menu automatically hides after a few seconds of inactivity. Move your mouse to bring it back.</p>
                         </div>
-                        <div class="bg-white/5 rounded-xl p-4 border border-white/10">
-                            <p class="text-text/80 text-sm sm:text-base"><strong class="text-white">Mobile Friendly:</strong> On mobile devices, tap the menu button (☰) in the top-right corner to access all features.</p>
+                        <div class="tom-jerry-card rounded-xl p-6">
+                            <p class="tom-jerry-text text-sm sm:text-base"><strong class="tom-jerry-heading">Mobile Friendly:</strong> On mobile devices, tap the menu button (☰) in the top-right corner to access all features.</p>
                         </div>
-                        <div class="bg-white/5 rounded-xl p-4 border border-white/10">
-                            <p class="text-text/80 text-sm sm:text-base"><strong class="text-white">Random Mode:</strong> Use the "Random" button in the mobile menu to discover new effects randomly.</p>
+                        <div class="tom-jerry-card rounded-xl p-6">
+                            <p class="tom-jerry-text text-sm sm:text-base"><strong class="tom-jerry-heading">Random Mode:</strong> Use the "Random" button in the mobile menu to discover new effects randomly.</p>
                         </div>
-                        <div class="bg-white/5 rounded-xl p-4 border border-white/10">
-                            <p class="text-text/80 text-sm sm:text-base"><strong class="text-white">Games Controls:</strong> Most games support keyboard controls. Check individual game instructions for details.</p>
+                        <div class="tom-jerry-card rounded-xl p-6">
+                            <p class="tom-jerry-text text-sm sm:text-base"><strong class="tom-jerry-heading">Games Controls:</strong> Most games support keyboard controls. Check individual game instructions for details.</p>
                         </div>
                     </div>
                 </div>
-
-                <!-- Get Started Button -->
-                <div class="text-center pt-4 sm:pt-6 border-t border-white/10">
-                    <button id="homeOverlayGetStarted" class="bg-white text-black border-0 px-8 sm:px-10 py-3 sm:py-4 rounded-[25px] cursor-pointer text-base sm:text-lg font-extrabold uppercase min-h-12 sm:min-h-14 touch-manipulation hover:bg-white/90 transition-all duration-200 shadow-lg hover:shadow-xl">
-                        Get Started
-                    </button>
-                    <p class="text-text/60 text-xs sm:text-sm mt-4">Click anywhere outside this window or press the close button to dismiss</p>
-                </div>
-            </div>
+            </section>
         </div>
     </div>
 

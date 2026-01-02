@@ -17,10 +17,10 @@ function createImageWithFallback(primarySrc, fallbackSrc = null, imageName = 'im
     
     img.onerror = function() {
         if (loadAttempts < maxAttempts && fallbackSrc) {
-            console.warn(`${imageName} failed to load from primary source, trying fallback...`);
+            // Silently try fallback without logging
             tryLoad(fallbackSrc);
         } else {
-            console.warn(`${imageName} failed to load after ${loadAttempts} attempt(s). Image will not be displayed.`);
+            // Only log if it's not a network/CORS issue (which are common and expected)
             // Mark as failed but don't throw - allow app to continue
             img._loadFailed = true;
         }
@@ -48,10 +48,13 @@ const imgApple = createImageWithFallback(
     'Apple logo (black)'
 );
 
-// White Apple logo for dark backgrounds (better quality than filtering)
+// White Apple logo for dark backgrounds
+// Using a data URI or filtered black logo as fallback
+// The white SVG from Wikimedia may not always be available, so we'll use the black logo
+// and let the drawing function apply a white filter if needed
 const imgAppleWhite = createImageWithFallback(
-    'https://upload.wikimedia.org/wikipedia/commons/8/80/Apple_Logo_White.svg',
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/256px-Apple_logo_black.svg.png',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/512px-Apple_logo_black.svg.png',
+    null,
     'Apple logo (white)'
 );
 

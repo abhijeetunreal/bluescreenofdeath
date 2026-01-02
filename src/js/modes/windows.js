@@ -40,22 +40,36 @@ let win11LoadingState = {
 let currentWindowsMode = null;
 
 export async function initWindowsMode(mode, canvas) {
+    // Clean up previous mode if switching
+    if (currentWindowsMode && currentWindowsMode !== mode) {
+        cleanupWindowsMode();
+    }
+    
+    currentWindowsMode = mode;
+    
     // Handle win_ransomware as a special case (full HTML page in iframe)
     if (mode === 'win_ransomware') {
         await loadAndInjectRansomware();
         return;
     }
     
-    // Clean up ransomware iframe if switching away from it
-    if (currentWindowsMode === 'win_ransomware' && mode !== 'win_ransomware') {
-        cleanupRansomware();
+    // Ensure canvas is visible for non-ransomware modes
+    if (mode !== 'win_ransomware' && canvas) {
+        canvas.style.display = 'block';
+        canvas.classList.remove('hidden');
     }
     
-    // Preload template for this mode
-    if (mode && !templateCache.has(mode)) {
-        const template = await loadTemplate(mode);
-        if (template) {
-            templateCache.set(mode, template);
+    // Preload template for this mode (skip modes that don't use templates)
+    const modesWithoutTemplates = ['win_xp_upd']; // Modes that are drawn directly, not from templates
+    if (mode && !modesWithoutTemplates.includes(mode) && !templateCache.has(mode)) {
+        try {
+            const template = await loadTemplate(mode);
+            if (template) {
+                templateCache.set(mode, template);
+            }
+        } catch (error) {
+            // Silently ignore template loading errors for modes that might not have templates
+            console.debug(`Template not found for mode: ${mode}`, error);
         }
     }
     
@@ -114,6 +128,12 @@ export async function initWindowsMode(mode, canvas) {
 }
 
 export function renderWindowsMode(mode, ctx, canvas) {
+    // Ensure canvas is visible for non-ransomware modes
+    if (mode !== 'win_ransomware' && canvas) {
+        canvas.style.display = 'block';
+        canvas.classList.remove('hidden');
+    }
+    
     const frame = state.getFrame();
     const progress = state.getProgress();
     
@@ -577,6 +597,25 @@ function cleanupRansomware() {
     // Show main canvas again
     if (canvas) {
         canvas.style.display = 'block';
+        canvas.classList.remove('hidden');
     }
+}
+
+/**
+ * Clean up Windows mode state when switching away from Windows modes
+ */
+export function cleanupWindowsMode() {
+    // Clean up ransomware if it was active
+    if (currentWindowsMode === 'win_ransomware') {
+        cleanupRansomware();
+    }
+    
+    // Show main canvas
+    if (canvas) {
+        canvas.style.display = 'block';
+        canvas.classList.remove('hidden');
+    }
+    
+    currentWindowsMode = null;
 }
 

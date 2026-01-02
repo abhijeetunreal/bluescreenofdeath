@@ -37,6 +37,12 @@ export async function loadTemplate(modeName) {
         templatePath = `src/templates/misc/${modeName}.html`;
     }
 
+    // Modes that don't use templates (drawn directly with Canvas)
+    const modesWithoutTemplates = ['win_xp_upd'];
+    if (modesWithoutTemplates.includes(modeName)) {
+        return null;
+    }
+    
     try {
         const response = await fetch(templatePath);
         if (!response.ok) {

@@ -1,14 +1,30 @@
 // Apple modes
 
 import * as state from '../core/state.js';
+import { getCanvas } from '../core/canvas.js';
 import { drawWhiteLogo, drawiOSProgressBar, drawMacOSProgressBar, drawMacOSBootProgressBar } from '../utils/drawing.js';
 import { imgApple, imgAppleWhite } from '../utils/assets.js';
 import { loadTemplate } from '../utils/template-loader.js';
 import { renderTemplateToCanvas } from '../utils/template-renderer.js';
 
 const templateCache = new Map();
+const canvas = getCanvas();
+let currentAppleMode = null;
 
 export async function initAppleMode(mode, canvas) {
+    // Clean up previous mode if switching
+    if (currentAppleMode && currentAppleMode !== mode) {
+        cleanupAppleMode();
+    }
+    
+    currentAppleMode = mode;
+    
+    // Ensure canvas is visible
+    if (canvas) {
+        canvas.style.display = 'block';
+        canvas.classList.remove('hidden');
+    }
+    
     if (mode === 'macos_drift') {
         const particles = Array.from({length: 80}, () => ({
             x: Math.random() * canvas.width,
@@ -40,6 +56,12 @@ export async function initAppleMode(mode, canvas) {
 }
 
 export function renderAppleMode(mode, ctx, canvas) {
+    // Ensure canvas is visible
+    if (canvas) {
+        canvas.style.display = 'block';
+        canvas.classList.remove('hidden');
+    }
+    
     const frame = state.getFrame();
     const progress = state.getProgress();
     
@@ -366,5 +388,18 @@ export function renderAppleMode(mode, ctx, canvas) {
             break;
         }
     }
+}
+
+/**
+ * Clean up Apple mode state when switching away from Apple modes
+ */
+export function cleanupAppleMode() {
+    // Show main canvas
+    if (canvas) {
+        canvas.style.display = 'block';
+        canvas.classList.remove('hidden');
+    }
+    
+    currentAppleMode = null;
 }
 

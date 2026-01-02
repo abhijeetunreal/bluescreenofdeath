@@ -22,26 +22,6 @@
             background-color: #000;
         }
 
-        /* Glitch/Shake Animation Classes */
-        @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            30% { transform: translate(3px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -1px) rotate(1deg); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg); }
-            60% { transform: translate(-3px, 1px) rotate(0deg); }
-            70% { transform: translate(3px, 1px) rotate(-1deg); }
-            80% { transform: translate(-1px, -1px) rotate(1deg); }
-            90% { transform: translate(1px, 2px) rotate(0deg); }
-            100% { transform: translate(1px, -2px) rotate(-1deg); }
-        }
-
-        .shake-screen {
-            animation: shake 0.5s;
-            animation-iteration-count: infinite; 
-        }
-
         .invert-colors {
             filter: invert(1);
         }
@@ -273,10 +253,6 @@
         .extra-terminal .cmd-content {
             font-size: 12px;
         }
-
-        .cursor-blink { animation: blink 1s step-end infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
-
 
         /* --- POPUP WINDOWS (Classic Error Style) --- */
         .popup-window {
@@ -812,18 +788,6 @@ C:\Windows\system32><span class="cursor-blink">_</span>
                 // --- Level 5: Popups ---
                 if (chaosLevel > 5 && Math.random() > 0.6) spawnPopup();
 
-                // --- Level 10: Glitch Effects ---
-                if (chaosLevel > 10 && Math.random() > 0.7) {
-                    desktop.style.filter = 'invert(1)';
-                    setTimeout(() => desktop.style.filter = 'invert(0)', 50);
-                }
-
-                // --- Level 20: Screen Shake ---
-                if (chaosLevel > 20 && Math.random() > 0.8) {
-                    desktop.classList.add('shake-screen');
-                    setTimeout(() => desktop.classList.remove('shake-screen'), 500);
-                }
-                
                 // --- Level 25: Extra Terminals ---
                 if (chaosLevel > 25 && chaosLevel % 10 === 0) {
                     spawnTerminal();

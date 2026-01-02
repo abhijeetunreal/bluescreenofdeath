@@ -3,10 +3,10 @@
 import * as state from './state.js';
 import { getCanvas, getCtx } from './canvas.js';
 import { renderColorMode } from '../modes/color.js';
-import { initWindowsMode, renderWindowsMode } from '../modes/windows.js';
-import { initAppleMode, renderAppleMode } from '../modes/apple.js';
-import { initPrankMode, renderPrankMode } from '../modes/pranks.js';
-import { initMiscMode, renderMiscMode } from '../modes/misc.js';
+import { initWindowsMode, renderWindowsMode, cleanupWindowsMode } from '../modes/windows.js';
+import { initAppleMode, renderAppleMode, cleanupAppleMode } from '../modes/apple.js';
+import { initPrankMode, renderPrankMode, cleanupPrankMode } from '../modes/pranks.js';
+import { initMiscMode, renderMiscMode, cleanupMiscMode } from '../modes/misc.js';
 import { initGamesMode, renderGamesMode, cleanupGame, isGamesMode } from '../modes/games.js';
 import { resetUITimer } from '../ui/ui-timer.js';
 import { handleModeChange } from '../ui/game-screensaver.js';
@@ -31,9 +31,20 @@ export async function initMode() {
     currentInitMode = mode;
     
     try {
-        // Clean up previous game if switching away from games
+        // Clean up previous mode if switching away from it
         if (previousMode && isGamesMode(previousMode) && !isGamesMode(mode)) {
             cleanupGame();
+        } else if (previousMode && (previousMode === 'macos_drift' || previousMode.startsWith('macos_') || previousMode.startsWith('ios_')) && 
+                   !(mode === 'macos_drift' || mode.startsWith('macos_') || mode.startsWith('ios_'))) {
+            cleanupAppleMode();
+        } else if (previousMode && ['ubuntu', 'chromeos', 'matrix', 'dvd', 'flip_clock', 'quotes'].includes(previousMode) && 
+                   !['ubuntu', 'chromeos', 'matrix', 'dvd', 'flip_clock', 'quotes'].includes(mode)) {
+            cleanupMiscMode();
+        } else if (previousMode && ['broken_screen', 'white_noise', 'radar', 'hacker', 'no_signal'].includes(previousMode) && 
+                   !['broken_screen', 'white_noise', 'radar', 'hacker', 'no_signal'].includes(mode)) {
+            cleanupPrankMode();
+        } else if (previousMode && previousMode.startsWith('win_') && !mode.startsWith('win_')) {
+            cleanupWindowsMode();
         }
         
         if (isGamesMode(mode)) {
@@ -104,6 +115,11 @@ export function animate() {
 }
 
 export async function setMode(mode, val, el) {
+    // Show canvas view when a mode is selected
+    if (window.showCanvasView) {
+        window.showCanvasView();
+    }
+    
     // Notify screensaver of mode change (will stop if switching to non-game mode)
     handleModeChange(mode);
     
@@ -147,5 +163,9 @@ export async function setMode(mode, val, el) {
     }
     
     resetUITimer();
+    
+    // Return a flag indicating if mobile menu should close
+    // This allows the onclick handler to wait before closing
+    return true;
 }
 

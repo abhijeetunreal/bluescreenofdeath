@@ -1,13 +1,29 @@
 // Prank modes
 
 import * as state from '../core/state.js';
+import { getCanvas } from '../core/canvas.js';
 import { drawBrokenScreen } from '../utils/drawing.js';
 import { loadTemplate } from '../utils/template-loader.js';
 import { renderTemplateToCanvas } from '../utils/template-renderer.js';
 
 const templateCache = new Map();
+const canvas = getCanvas();
+let currentPrankMode = null;
 
 export async function initPrankMode(mode, canvas) {
+    // Clean up previous mode if switching
+    if (currentPrankMode && currentPrankMode !== mode) {
+        cleanupPrankMode();
+    }
+    
+    currentPrankMode = mode;
+    
+    // Ensure canvas is visible
+    if (canvas) {
+        canvas.style.display = 'block';
+        canvas.classList.remove('hidden');
+    }
+    
     if (mode === 'broken_screen') {
         const crackLines = Array.from({length: 12}, () => ({
             x: Math.random() * canvas.width,
@@ -30,6 +46,12 @@ export async function initPrankMode(mode, canvas) {
 }
 
 export function renderPrankMode(mode, ctx, canvas) {
+    // Ensure canvas is visible
+    if (canvas) {
+        canvas.style.display = 'block';
+        canvas.classList.remove('hidden');
+    }
+    
     const frame = state.getFrame();
     
     switch(mode) {
@@ -143,5 +165,18 @@ export function renderPrankMode(mode, ctx, canvas) {
             renderTemplateToCanvas(template, ctx, canvas, {});
             break;
     }
+}
+
+/**
+ * Clean up Prank mode state when switching away from Prank modes
+ */
+export function cleanupPrankMode() {
+    // Show main canvas
+    if (canvas) {
+        canvas.style.display = 'block';
+        canvas.classList.remove('hidden');
+    }
+    
+    currentPrankMode = null;
 }
 
