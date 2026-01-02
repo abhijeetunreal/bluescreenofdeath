@@ -4,8 +4,9 @@
 
 @layer base {
   body, html {
-    @apply m-0 p-0 w-full h-full overflow-hidden bg-black;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    @apply m-0 p-0 w-full h-full overflow-hidden;
+    background: linear-gradient(135deg, #FFF8DC 0%, #F5DEB3 50%, #FFE4B5 100%);
+    font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Comic Neue', cursive, sans-serif;
     font-size: 16px;
   }
 
@@ -68,24 +69,50 @@
     @apply opacity-0;
   }
 
+  /* Home page and canvas view states */
+  body.home-view #colorCanvas,
+  body.home-view #ui-container,
+  body.home-view .mobile-menu-btn {
+    display: none !important;
+  }
+
+  /* Always hide mobile menu button on desktop */
+  .mobile-menu-btn {
+    display: none !important;
+  }
+
+  body.canvas-view #homePage {
+    display: none !important;
+  }
+
+  /* Initial state - show home page by default */
+  #homePage {
+    display: block;
+  }
+
+  #colorCanvas.hidden,
+  .hidden {
+    display: none !important;
+  }
+
+  body.home-view {
+    @apply overflow-auto;
+  }
+
+  body.canvas-view {
+    @apply overflow-hidden;
+  }
+
   /* Hide mobile menu elements by default (desktop) */
   .mobile-menu-btn,
   .mobile-menu,
   .mobile-menu-overlay {
-    display: none;
+    display: none !important;
   }
 
-  /* Hide desktop UI on mobile/tablet and show mobile menu button */
-  @media (max-width: 768px) {
-    .desktop-ui {
-      display: none !important;
-    }
-    
-    .mobile-menu-btn,
-    .mobile-menu,
-    .mobile-menu-overlay {
-      display: flex;
-    }
+  /* Show desktop UI on all screen sizes */
+  .desktop-ui {
+    display: flex !important;
   }
 }
 
@@ -102,27 +129,31 @@
     transform: translateX(-50%) translateY(0);
   }
 
-  /* Mobile menu component */
+  /* Mobile menu component - Tom and Jerry theme */
   .mobile-menu {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    scrollbar-color: rgba(139, 69, 19, 0.4) rgba(245, 222, 179, 0.2);
+    background: linear-gradient(135deg, rgba(255, 248, 220, 0.98) 0%, rgba(255, 215, 0, 0.2) 100%) !important;
+    border-top: 4px solid rgba(139, 69, 19, 0.6) !important;
   }
 
   .mobile-menu::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
   }
 
   .mobile-menu::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(245, 222, 179, 0.3);
+    border-radius: 4px;
   }
 
   .mobile-menu::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 3px;
+    background: rgba(139, 69, 19, 0.6);
+    border-radius: 4px;
+    border: 2px solid rgba(245, 222, 179, 0.3);
   }
 
   .mobile-menu::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(139, 69, 19, 0.8);
   }
 
   .mobile-menu.show {
@@ -173,14 +204,30 @@
     -webkit-tap-highlight-color: rgba(255, 255, 255, 0.1);
   }
 
-  /* Mobile menu card hover effects */
-  .mobile-menu [class*="bg-white/5"] {
+  /* Mobile menu card hover effects - Tom and Jerry theme */
+  .mobile-menu [class*="bg-white\2F 5"],
+  .mobile-menu [class*="bg-white\2F 8"],
+  .mobile-menu [class*="bg-white\2F 10"] {
     transition: all 0.2s ease;
+    background: linear-gradient(135deg, rgba(255, 248, 220, 0.9) 0%, rgba(255, 215, 0, 0.15) 100%) !important;
+    border: 2px solid rgba(139, 69, 19, 0.4) !important;
+    color: #8B4513 !important;
   }
 
-  .mobile-menu [class*="bg-white/5"]:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
+  .mobile-menu [class*="bg-white\2F 5"]:hover,
+  .mobile-menu [class*="bg-white\2F 8"]:hover,
+  .mobile-menu [class*="bg-white\2F 10"]:hover {
+    background: linear-gradient(135deg, rgba(255, 248, 220, 1) 0%, rgba(255, 215, 0, 0.3) 100%) !important;
+    border-color: rgba(255, 107, 53, 0.6) !important;
+    transform: translateX(3px);
+  }
+
+  .mobile-menu .text-text {
+    color: #8B4513 !important;
+  }
+
+  .mobile-menu [class*="text-text\2F 60"] {
+    color: rgba(139, 69, 19, 0.6) !important;
   }
 
   /* Home overlay component */
@@ -238,6 +285,381 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  /* Home page styles - Tom and Jerry theme */
+  .home-page {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(139, 69, 19, 0.4) rgba(245, 222, 179, 0.2);
+    background: linear-gradient(135deg, #FFF8DC 0%, #F5DEB3 30%, #FFE4B5 60%, #FFF8DC 100%);
+  }
+
+  .home-page::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .home-page::-webkit-scrollbar-track {
+    background: rgba(245, 222, 179, 0.3);
+    border-radius: 5px;
+  }
+
+  .home-page::-webkit-scrollbar-thumb {
+    background: rgba(139, 69, 19, 0.6);
+    border-radius: 5px;
+    border: 2px solid rgba(245, 222, 179, 0.3);
+  }
+
+  .home-page::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 69, 19, 0.8);
+  }
+
+  /* Category card styles - Tom and Jerry theme */
+  .category-card {
+    will-change: transform;
+    -webkit-tap-highlight-color: rgba(255, 107, 53, 0.2);
+    background: linear-gradient(135deg, rgba(255, 248, 220, 0.95) 0%, rgba(255, 215, 0, 0.3) 100%) !important;
+    border: 3px solid rgba(139, 69, 19, 0.6) !important;
+    box-shadow: 0 8px 16px rgba(139, 69, 19, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  .category-card:hover {
+    transform: scale(1.08) rotate(1deg);
+    border-color: rgba(255, 107, 53, 0.8) !important;
+    box-shadow: 0 12px 24px rgba(139, 69, 19, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    background: linear-gradient(135deg, rgba(255, 248, 220, 1) 0%, rgba(255, 215, 0, 0.4) 100%) !important;
+  }
+
+  .category-card h3 {
+    color: #8B4513 !important;
+    text-shadow: 2px 2px 0px rgba(255, 215, 0, 0.5);
+  }
+
+  .category-card p {
+    color: #654321 !important;
+  }
+
+  /* Category modal styles - Tom and Jerry theme */
+  .category-modal {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .category-modal-content {
+    animation: slideUp 0.3s ease-out;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(139, 69, 19, 0.4) rgba(245, 222, 179, 0.2);
+  }
+
+  .category-modal-content::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .category-modal-content::-webkit-scrollbar-track {
+    background: rgba(245, 222, 179, 0.3);
+    border-radius: 4px;
+  }
+
+  .category-modal-content::-webkit-scrollbar-thumb {
+    background: rgba(139, 69, 19, 0.6);
+    border-radius: 4px;
+    border: 2px solid rgba(245, 222, 179, 0.3);
+  }
+
+  .category-modal-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 69, 19, 0.8);
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .category-modal-close {
+    border: none !important;
+    outline: none !important;
+  }
+
+  .category-modal-close:focus {
+    outline: 2px solid rgba(255, 107, 53, 0.5) !important;
+    outline-offset: 2px;
+  }
+
+  .category-modal-button {
+    border: none !important;
+    outline: none !important;
+  }
+
+  .category-modal-button:focus {
+    outline: 2px solid rgba(255, 107, 53, 0.5) !important;
+    outline-offset: 2px;
+  }
+
+  /* Tom and Jerry Theme Styles */
+  .tom-jerry-bg {
+    background: linear-gradient(135deg, #FFF8DC 0%, #F5DEB3 25%, #FFE4B5 50%, #FFFACD 75%, #FFF8DC 100%);
+    background-size: 200% 200%;
+    animation: tomJerryGradient 15s ease infinite;
+  }
+
+  @keyframes tomJerryGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .tom-jerry-title {
+    color: #8B4513;
+    text-shadow: 
+      3px 3px 0px #FFD700,
+      6px 6px 0px rgba(139, 69, 19, 0.3),
+      0 0 20px rgba(255, 215, 0, 0.5);
+    font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Comic Neue', cursive;
+    letter-spacing: 2px;
+    transform: rotate(-1deg);
+    animation: tomJerryBounce 3s ease-in-out infinite;
+  }
+
+  @keyframes tomJerryBounce {
+    0%, 100% { transform: rotate(-1deg) translateY(0); }
+    50% { transform: rotate(1deg) translateY(-5px); }
+  }
+
+  .tom-jerry-heading {
+    color: #8B4513;
+    text-shadow: 2px 2px 0px rgba(255, 215, 0, 0.6);
+    font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Comic Neue', cursive;
+  }
+
+  .tom-jerry-text {
+    color: #654321;
+    text-shadow: 1px 1px 0px rgba(255, 248, 220, 0.8);
+  }
+
+  .tom-jerry-card {
+    background: linear-gradient(135deg, rgba(255, 248, 220, 0.9) 0%, rgba(255, 215, 0, 0.2) 100%);
+    border: 3px solid rgba(139, 69, 19, 0.5);
+    box-shadow: 
+      0 4px 8px rgba(139, 69, 19, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      inset 0 -1px 0 rgba(139, 69, 19, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .tom-jerry-card:hover {
+    transform: translateY(-2px) rotate(0.5deg);
+    box-shadow: 
+      0 8px 16px rgba(139, 69, 19, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      inset 0 -1px 0 rgba(139, 69, 19, 0.2);
+    border-color: rgba(255, 107, 53, 0.7);
+  }
+
+  /* Update UI container for Tom and Jerry theme */
+  .desktop-ui {
+    background: linear-gradient(135deg, rgba(255, 248, 220, 0.98) 0%, rgba(255, 215, 0, 0.4) 100%) !important;
+    border: 2px solid rgba(139, 69, 19, 0.7) !important;
+    box-shadow: 
+      0 12px 32px rgba(139, 69, 19, 0.5),
+      0 4px 16px rgba(139, 69, 19, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 -1px 0 rgba(139, 69, 19, 0.2) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+  }
+
+  .mobile-menu-btn {
+    background: linear-gradient(135deg, rgba(255, 248, 220, 0.98) 0%, rgba(255, 215, 0, 0.4) 100%) !important;
+    border: 2px solid rgba(139, 69, 19, 0.7) !important;
+    box-shadow: 
+      0 6px 20px rgba(139, 69, 19, 0.4),
+      0 2px 8px rgba(139, 69, 19, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+    backdrop-filter: blur(15px) saturate(180%) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .mobile-menu-btn:hover,
+  .mobile-menu-btn.active {
+    box-shadow: 
+      0 8px 24px rgba(139, 69, 19, 0.5),
+      0 4px 12px rgba(139, 69, 19, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+    transform: translateY(-1px) !important;
+  }
+
+  .mobile-menu-btn span {
+    background: #8B4513 !important;
+  }
+
+  /* Update dropdowns */
+  .dropdown-content {
+    background: linear-gradient(135deg, rgba(255, 248, 220, 1) 0%, rgba(255, 215, 0, 0.6) 100%) !important;
+    border: 2px solid rgba(139, 69, 19, 0.85) !important;
+    box-shadow: 
+      0 12px 32px rgba(139, 69, 19, 0.6), 
+      0 6px 16px rgba(139, 69, 19, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 0 rgba(139, 69, 19, 0.1) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    padding: 8px 0 !important;
+  }
+
+  /* Improve dropdown button text visibility */
+  .dropdown-content button {
+    color: rgba(139, 69, 19, 0.95) !important;
+    font-weight: 500 !important;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9) !important;
+    border-radius: 8px !important;
+    margin: 2px 8px !important;
+    transition: all 0.15s ease !important;
+  }
+
+  .dropdown-content button:hover {
+    color: rgba(139, 69, 19, 1) !important;
+    font-weight: 600 !important;
+    background: linear-gradient(135deg, rgba(255, 248, 220, 0.9) 0%, rgba(255, 215, 0, 0.3) 100%) !important;
+    box-shadow: 
+      0 2px 8px rgba(139, 69, 19, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+    transform: translateX(4px) !important;
+  }
+
+  .dropdown-content button:active {
+    background: linear-gradient(135deg, rgba(255, 248, 220, 0.8) 0%, rgba(255, 215, 0, 0.4) 100%) !important;
+    transform: translateX(2px) !important;
+  }
+
+  /* Improve Home and FS buttons */
+  #homeBtn {
+    background: linear-gradient(135deg, rgba(255, 248, 220, 0.95) 0%, rgba(255, 215, 0, 0.35) 100%) !important;
+    border: 2px solid rgba(139, 69, 19, 0.6) !important;
+    color: #8B4513 !important;
+    font-weight: 600 !important;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6) !important;
+    box-shadow: 
+      0 2px 8px rgba(139, 69, 19, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  #homeBtn:hover {
+    background: linear-gradient(135deg, rgba(255, 248, 220, 1) 0%, rgba(255, 215, 0, 0.5) 100%) !important;
+    border-color: rgba(255, 107, 53, 0.8) !important;
+    box-shadow: 
+      0 4px 12px rgba(139, 69, 19, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+    transform: translateY(-1px) !important;
+  }
+
+  #fsBtn {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 240, 240, 0.9) 100%) !important;
+    border: 2px solid rgba(139, 69, 19, 0.3) !important;
+    color: #1a1a1a !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+    box-shadow: 
+      0 3px 10px rgba(139, 69, 19, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  #fsBtn:hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(250, 250, 250, 1) 100%) !important;
+    border-color: rgba(139, 69, 19, 0.5) !important;
+    box-shadow: 
+      0 5px 15px rgba(139, 69, 19, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    transform: translateY(-1px) scale(1.02) !important;
+  }
+
+  /* Improve swatch buttons */
+  .swatch {
+    box-shadow: 
+      0 2px 8px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .swatch:hover {
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      0 0 20px rgba(255, 255, 255, 0.6) !important;
+    transform: scale(1.15) !important;
+  }
+
+  .swatch.active {
+    box-shadow: 
+      0 0 20px rgba(255, 255, 255, 0.8),
+      0 4px 12px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+    transform: scale(1.1) !important;
+  }
+
+  /* Improve divider visibility */
+  .divider {
+    background: linear-gradient(to bottom, 
+      transparent 0%, 
+      rgba(139, 69, 19, 0.3) 20%, 
+      rgba(139, 69, 19, 0.3) 80%, 
+      transparent 100%) !important;
+    box-shadow: 0 0 4px rgba(139, 69, 19, 0.2) !important;
+  }
+
+  .drop-btn {
+    background: linear-gradient(135deg, rgba(255, 248, 220, 0.95) 0%, rgba(255, 215, 0, 0.35) 100%) !important;
+    border: 2px solid rgba(139, 69, 19, 0.6) !important;
+    color: #8B4513 !important;
+    font-weight: 600 !important;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6) !important;
+    box-shadow: 
+      0 2px 8px rgba(139, 69, 19, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .drop-btn:hover {
+    background: linear-gradient(135deg, rgba(255, 248, 220, 1) 0%, rgba(255, 215, 0, 0.5) 100%) !important;
+    border-color: rgba(255, 107, 53, 0.8) !important;
+    box-shadow: 
+      0 4px 12px rgba(139, 69, 19, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+    transform: translateY(-1px) !important;
+  }
+
+  .drop-btn:active {
+    transform: translateY(0) !important;
+    box-shadow: 
+      0 2px 6px rgba(139, 69, 19, 0.3),
+      inset 0 1px 2px rgba(139, 69, 19, 0.2) !important;
+  }
+
+  /* Modal backdrop click area */
+  .category-modal {
+    cursor: pointer;
+  }
+
+  .category-modal-content {
+    cursor: default;
+    pointer-events: auto;
+  }
+
+  /* Ensure modal is above everything */
+  .category-modal {
+    z-index: 3000 !important;
   }
 }
 

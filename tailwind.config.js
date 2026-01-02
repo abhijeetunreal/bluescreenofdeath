@@ -13,16 +13,23 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        bgUi: 'rgba(15, 15, 15, 0.95)',
-        borderUi: 'rgba(255, 255, 255, 0.15)',
-        accent: '#007aff',
-        text: '#eee',
+        // Tom and Jerry classic colors
+        bgUi: 'rgba(245, 222, 179, 0.95)', // Cream/beige background
+        borderUi: 'rgba(139, 69, 19, 0.6)', // Brown borders
+        accent: '#FF6B35', // Tom's red-orange
+        text: '#8B4513', // Brown text
+        tomYellow: '#FFD700', // Classic yellow
+        tomBrown: '#8B4513', // Brown
+        jerryBlue: '#4682B4', // Sky blue
+        cream: '#FFF8DC', // Cream
+        warmYellow: '#FFA500', // Warm orange-yellow
       },
       fontSize: {
         'base': '16px',
       },
       fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+        sans: ['Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Comic Neue', 'cursive', 'sans-serif'],
+        cartoon: ['Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Comic Neue', 'cursive'],
       },
       screens: {
         'xs': '360px',

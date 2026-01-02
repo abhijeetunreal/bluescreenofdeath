@@ -1,13 +1,29 @@
 // Miscellaneous modes
 
 import * as state from '../core/state.js';
+import { getCanvas } from '../core/canvas.js';
 import { quotes, imgChrome, imgUbuntu } from '../utils/assets.js';
 import { loadTemplate } from '../utils/template-loader.js';
 import { renderTemplateToCanvas } from '../utils/template-renderer.js';
 
 const templateCache = new Map();
+const canvas = getCanvas();
+let currentMiscMode = null;
 
 export async function initMiscMode(mode, canvas) {
+    // Clean up previous mode if switching
+    if (currentMiscMode && currentMiscMode !== mode) {
+        cleanupMiscMode();
+    }
+    
+    currentMiscMode = mode;
+    
+    // Ensure canvas is visible
+    if (canvas) {
+        canvas.style.display = 'block';
+        canvas.classList.remove('hidden');
+    }
+    
     if (mode === 'matrix') {
         const cols = Math.floor(canvas.width / 20);
         const matrixChars = Array(cols).fill(0).map(() => Math.random() * -100);
@@ -36,6 +52,12 @@ export async function initMiscMode(mode, canvas) {
 }
 
 export function renderMiscMode(mode, ctx, canvas) {
+    // Ensure canvas is visible
+    if (canvas) {
+        canvas.style.display = 'block';
+        canvas.classList.remove('hidden');
+    }
+    
     const frame = state.getFrame();
     
     switch(mode) {
@@ -187,5 +209,18 @@ export function renderMiscMode(mode, ctx, canvas) {
             }
             break;
     }
+}
+
+/**
+ * Clean up Misc mode state when switching away from Misc modes
+ */
+export function cleanupMiscMode() {
+    // Show main canvas
+    if (canvas) {
+        canvas.style.display = 'block';
+        canvas.classList.remove('hidden');
+    }
+    
+    currentMiscMode = null;
 }
 
