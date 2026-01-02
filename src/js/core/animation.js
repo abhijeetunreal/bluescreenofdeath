@@ -7,6 +7,7 @@ import { initWindowsMode, renderWindowsMode } from '../modes/windows.js';
 import { initAppleMode, renderAppleMode } from '../modes/apple.js';
 import { initPrankMode, renderPrankMode } from '../modes/pranks.js';
 import { initMiscMode, renderMiscMode } from '../modes/misc.js';
+import { initGamesMode, renderGamesMode, cleanupGame, isGamesMode } from '../modes/games.js';
 import { resetUITimer } from '../ui/ui-timer.js';
 
 const canvas = getCanvas();
@@ -25,10 +26,18 @@ export async function initMode() {
     state.resetFrame();
     
     const mode = state.getCurrentMode();
+    const previousMode = currentInitMode;
     currentInitMode = mode;
     
     try {
-        if (mode === 'macos_drift' || mode.startsWith('macos_') || mode.startsWith('ios_')) {
+        // Clean up previous game if switching away from games
+        if (previousMode && isGamesMode(previousMode) && !isGamesMode(mode)) {
+            cleanupGame();
+        }
+        
+        if (isGamesMode(mode)) {
+            await initGamesMode(mode, canvas);
+        } else if (mode === 'macos_drift' || mode.startsWith('macos_') || mode.startsWith('ios_')) {
             await initAppleMode(mode, canvas);
         } else if (['ubuntu', 'chromeos', 'matrix', 'dvd', 'flip_clock', 'quotes'].includes(mode)) {
             await initMiscMode(mode, canvas);
@@ -72,7 +81,10 @@ export function animate() {
         const mode = state.getCurrentMode();
         
         // Route to appropriate mode renderer
-        if (mode === 'color') {
+        if (isGamesMode(mode)) {
+            // Games handle their own rendering, but we still call this for consistency
+            renderGamesMode(mode, ctx, canvas);
+        } else if (mode === 'color') {
             renderColorMode(ctx, canvas);
         } else if (mode.startsWith('win_')) {
             renderWindowsMode(mode, ctx, canvas);
