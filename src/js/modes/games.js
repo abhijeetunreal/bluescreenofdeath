@@ -49,6 +49,8 @@ export async function initGamesMode(mode, canvas) {
         await loadAndInjectSnake();
     } else if (mode === 'pacman') {
         await loadAndInjectPacman();
+    } else if (mode === 'mario') {
+        await loadAndInjectMario();
     }
     
     // Show the game container
@@ -173,6 +175,45 @@ async function loadAndInjectPacman() {
 }
 
 /**
+ * Load and inject Mario game
+ */
+async function loadAndInjectMario() {
+    // Remove existing iframe if present
+    if (gameIframe) {
+        gameIframe.remove();
+        gameIframe = null;
+    }
+    
+    // Create iframe for the Mario game
+    gameIframe = document.createElement('iframe');
+    gameIframe.id = 'mario-iframe';
+    gameIframe.style.cssText = `
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: #000;
+    `;
+    gameIframe.sandbox = 'allow-scripts allow-same-origin allow-forms';
+    
+    // Load the template
+    try {
+        const template = await loadTemplate('mario');
+        if (template && template.html) {
+            // If template has HTML content, use it
+            gameIframe.srcdoc = template.html;
+        } else {
+            // Fallback: load from file directly
+            gameIframe.src = 'src/templates/games/mario.html';
+        }
+    } catch (error) {
+        console.warn('Failed to load Mario template, using direct path:', error);
+        gameIframe.src = 'src/templates/games/mario.html';
+    }
+    
+    gameContainer.appendChild(gameIframe);
+}
+
+/**
  * Render games mode (games handle their own rendering)
  * @param {string} mode - The game mode name
  * @param {CanvasRenderingContext2D} ctx - The canvas context (not used for games)
@@ -213,6 +254,6 @@ export function cleanupGame() {
  * @returns {boolean} True if the mode is a games mode
  */
 export function isGamesMode(mode) {
-    return mode === 'tetris' || mode === 'snake' || mode === 'pacman' || mode.startsWith('game_');
+    return mode === 'tetris' || mode === 'snake' || mode === 'pacman' || mode === 'mario' || mode.startsWith('game_');
 }
 

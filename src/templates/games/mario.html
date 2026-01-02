@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Super Mario Engine - Auto Simulation</title>
+    <style>
+        :root {
+            --sky-blue: #5c94fc;
+            --mario-red: #ff0000;
+            --ground-brown: #944824;
+            --pipe-green: #00a800;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Arial Black', sans-serif;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: var(--sky-blue);
+            overflow: hidden;
+        }
+
+        #mario-canvas {
+            display: block;
+            image-rendering: pixelated; /* Maintain retro feel */
+        }
+
+        #menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .start-btn {
+            background: transparent;
+            color: #fff;
+            border: 4px solid #fff;
+            padding: 20px 60px;
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .start-btn:hover {
+            background: #fff;
+            color: #000;
+            transform: scale(1.1);
+        }
+
+        /* Scanline effect */
+        #game-container::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            z-index: 5;
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="mario-canvas"></canvas>
+        <div id="menu">
+            <h1 style="color: white; margin-bottom: 30px; font-size: 50px; letter-spacing: 10px;">SUPER ENGINE</h1>
+            <button id="start-btn" class="start-btn">START WORLD 1-1</button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('mario-canvas');
+            const ctx = canvas.getContext('2d');
+            const menu = document.getElementById('menu');
+            const startBtn = document.getElementById('start-btn');
+
+            let width, height;
+            let gameOver = true;
+            let cameraX = 0;
+            let tick = 0;
+
+            const GRAVITY = 0.8;
+            const PLAYER_SPEED = 5;
+            const JUMP_FORCE = -16;
+            const GROUND_HEIGHT = 80;
+
+            // --- Game Objects ---
+            class Entity {
+                constructor(x, y, w, h, color) {
+                    this.x = x;
+                    this.y = y;
+                    this.w = w;
+                    this.h = h;
+                    this.color = color;
+                    this.vx = 0;
+                    this.vy = 0;
+                    this.onGround = false;
+                }
+            }
+
+            let player;
+            let platforms = [];
+            let enemies = [];
+            let clouds = [];
+
+            function resize() {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+                if (!gameOver) resetGame();
+            }
+
+            window.addEventListener('resize', resize);
+
+            function resetGame() {
+                cameraX = 0;
+                player = new Entity(100, height - GROUND_HEIGHT - 60, 40, 60, '#ff0000');
+                platforms = [];
+                enemies = [];
+                clouds = [];
+                
+                // Generate initial world
+                for (let i = 0; i < 20; i++) {
+                    generateChunk(i * 800);
+                }
+            }
+
+            function generateChunk(offsetX) {
+                // Add Ground
+                platforms.push({ x: offsetX, y: height - GROUND_HEIGHT, w: 801, h: GROUND_HEIGHT, type: 'ground' });
+
+                // Add Clouds
+                for(let i=0; i<2; i++) {
+                    clouds.push({
+                        x: offsetX + Math.random() * 800,
+                        y: 100 + Math.random() * 200,
+                        w: 100 + Math.random() * 100,
+                        speed: 0.5 + Math.random()
+                    });
+                }
+
+                // Add random obstacles (pipes/blocks)
+                if (offsetX > 1000) {
+                    const r = Math.random();
+                    if (r < 0.3) {
+                        // Pipe
+                        platforms.push({ x: offsetX + 300, y: height - GROUND_HEIGHT - 80, w: 80, h: 80, type: 'pipe' });
+                    } else if (r < 0.6) {
+                        // Floating blocks
+                        platforms.push({ x: offsetX + 200, y: height - GROUND_HEIGHT - 200, w: 200, h: 40, type: 'block' });
+                    }
+                    
+                    // Enemy
+                    if (Math.random() > 0.5) {
+                        enemies.push({ 
+                            x: offsetX + 500, 
+                            y: height - GROUND_HEIGHT - 40, 
+                            w: 40, h: 40, 
+                            vx: -2, 
+                            color: '#704000',
+                            dead: false 
+                        });
+                    }
+                }
+            }
+
+            function drawPlayer(p) {
+                const screenX = p.x - cameraX;
+                
+                // Hat
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(screenX, p.y, p.w, 15);
+                // Face/Body
+                ctx.fillStyle = '#ffcca5';
+                ctx.fillRect(screenX + 5, p.y + 15, p.w - 10, 20);
+                // Overalls
+                ctx.fillStyle = '#0000ff';
+                ctx.fillRect(screenX, p.y + 35, p.w, 25);
+                
+                // Eye
+                ctx.fillStyle = '#000';
+                ctx.fillRect(screenX + 25, p.y + 20, 5, 5);
+
+                // Walking animation leg logic (simple toggle)
+                if (Math.floor(tick / 10) % 2 === 0 && !p.onGround) {
+                    ctx.fillStyle = '#542d00';
+                    ctx.fillRect(screenX, p.y + 55, 15, 10);
+                }
+            }
+
+            function update() {
+                if (gameOver) return;
+
+                tick++;
+
+                // AI Logic: Mario moves right
+                player.vx = PLAYER_SPEED;
+
+                // Simple Raycast-like jump detection
+                // If there's an obstacle or enemy in front, jump
+                let shouldJump = false;
+                
+                // Check platforms in front
+                platforms.forEach(plat => {
+                    if (plat.x > player.x && plat.x < player.x + 150) {
+                        if (plat.y < height - GROUND_HEIGHT) shouldJump = true;
+                    }
+                });
+
+                // Check enemies in front
+                enemies.forEach(en => {
+                    if (!en.dead && en.x > player.x && en.x < player.x + 200) {
+                        shouldJump = true;
+                    }
+                });
+
+                if (shouldJump && player.onGround) {
+                    player.vy = JUMP_FORCE;
+                    player.onGround = false;
+                }
+
+                // Physics
+                player.vy += GRAVITY;
+                player.x += player.vx;
+                player.y += player.vy;
+
+                // Camera follow
+                cameraX = player.x - 200;
+
+                // Collisions
+                player.onGround = false;
+                platforms.forEach(plat => {
+                    if (player.x < plat.x + plat.w &&
+                        player.x + player.w > plat.x &&
+                        player.y < plat.y + plat.h &&
+                        player.y + player.h > plat.y) {
+                        
+                        // Vertical collision
+                        if (player.vy > 0 && player.y + player.h - player.vy <= plat.y) {
+                            player.y = plat.y - player.h;
+                            player.vy = 0;
+                            player.onGround = true;
+                        }
+                        // Horizontal collision (Stop player from walking through pipes)
+                        else if (player.x + player.w - player.vx <= plat.x) {
+                            player.vx = 0;
+                        }
+                    }
+                });
+
+                // Enemy Logic
+                enemies.forEach(en => {
+                    if (en.dead) return;
+                    en.x += en.vx;
+                    
+                    // Collision with player
+                    if (player.x < en.x + en.w &&
+                        player.x + player.w > en.x &&
+                        player.y < en.y + en.h &&
+                        player.y + player.h > en.y) {
+                        
+                        // Stomp enemy
+                        if (player.vy > 0 && player.y + player.h - player.vy <= en.y) {
+                            en.dead = true;
+                            player.vy = JUMP_FORCE / 1.5;
+                        } else {
+                            // Mario dies
+                            resetGame();
+                        }
+                    }
+                });
+
+                // Infinite Generation
+                if (player.x > platforms[platforms.length - 10].x) {
+                    generateChunk(platforms[platforms.length - 1].x + 800);
+                }
+
+                draw();
+                requestAnimationFrame(update);
+            }
+
+            function draw() {
+                // Sky
+                ctx.fillStyle = '#5c94fc';
+                ctx.fillRect(0, 0, width, height);
+
+                // Clouds
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                clouds.forEach(c => {
+                    ctx.beginPath();
+                    ctx.ellipse(c.x - cameraX * 0.5, c.y, c.w / 2, 30, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Platforms
+                platforms.forEach(plat => {
+                    const sx = plat.x - cameraX;
+                    if (sx + plat.w < 0 || sx > width) return;
+
+                    if (plat.type === 'ground') {
+                        ctx.fillStyle = '#944824';
+                        ctx.fillRect(sx, plat.y, plat.w, plat.h);
+                        ctx.fillStyle = '#3cb043'; // grass top
+                        ctx.fillRect(sx, plat.y, plat.w, 10);
+                    } else if (plat.type === 'pipe') {
+                        ctx.fillStyle = '#00a800';
+                        ctx.fillRect(sx, plat.y, plat.w, plat.h);
+                        ctx.strokeStyle = '#000';
+                        ctx.strokeRect(sx, plat.y, plat.w, plat.h);
+                    } else if (plat.type === 'block') {
+                        ctx.fillStyle = '#f8b800';
+                        ctx.fillRect(sx, plat.y, plat.w, plat.h);
+                        ctx.strokeStyle = '#000';
+                        ctx.strokeRect(sx, plat.y, plat.w, plat.h);
+                    }
+                });
+
+                // Enemies (Goombas)
+                enemies.forEach(en => {
+                    if (en.dead) return;
+                    const sx = en.x - cameraX;
+                    ctx.fillStyle = en.color;
+                    ctx.fillRect(sx, en.y, en.w, en.h);
+                    // Eyes
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(sx + 5, en.y + 10, 10, 10);
+                    ctx.fillRect(sx + 25, en.y + 10, 10, 10);
+                });
+
+                // Player
+                drawPlayer(player);
+            }
+
+            startBtn.addEventListener('click', () => {
+                menu.style.display = 'none';
+                gameOver = false;
+                resize();
+                requestAnimationFrame(update);
+            });
+
+            resize();
+        })();
+    </script>
+</body>
+</html>
+
