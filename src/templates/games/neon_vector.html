@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Vector - Space Engine</title>
+    <style>
+        :root {
+            --bg-color: #020617;
+            --ship-glow: #22d3ee;
+            --enemy-glow: #f472b6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+            user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.5s ease;
+        }
+
+        h1 {
+            color: #22d3ee;
+            font-size: 42px;
+            letter-spacing: 15px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            font-weight: 200;
+            text-align: center;
+        }
+
+        p {
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 40px;
+            letter-spacing: 2px;
+            font-size: 12px;
+        }
+
+        .btn {
+            background: transparent;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px 60px;
+            font-size: 14px;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            outline: none;
+        }
+
+        .btn:hover {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+            letter-spacing: 12px;
+            transform: scale(1.05);
+        }
+
+        #mode-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #22d3ee;
+            font-size: 10px;
+            letter-spacing: 2px;
+            z-index: 50;
+        }
+
+        .hidden {
+            display: none !important;
+            opacity: 0;
+        }
+
+        /* Scanline effect */
+        #game-container::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            z-index: 5;
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="mode-indicator">SYSTEM: AUTO-PILOT</div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="overlay">
+            <h1>NEON VECTOR</h1>
+            <p>INTELLIGENT DEFENSE SYSTEM INITIALIZED</p>
+            <button id="start-btn" class="btn">Initiate Drive</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const overlay = document.getElementById('overlay');
+        const startBtn = document.getElementById('start-btn');
+        const modeIndicator = document.getElementById('mode-indicator');
+
+        let width, height;
+        let gameState = 'MENU';
+        let isAutoPilot = true;
+        let frameCount = 0;
+
+        const themeColors = [
+            { main: '#f472b6', glow: 'rgba(244, 114, 182, 0.6)' },
+            { main: '#fbbf24', glow: 'rgba(251, 191, 36, 0.6)' },
+            { main: '#a855f7', glow: 'rgba(168, 85, 247, 0.6)' },
+            { main: '#4ade80', glow: 'rgba(74, 222, 128, 0.6)' }
+        ];
+
+        let player = {
+            x: 0,
+            y: 0,
+            w: 40,
+            h: 40,
+            bullets: [],
+            cooldown: 0
+        };
+
+        let enemies = [];
+        let particles = [];
+        let enemyBullets = [];
+        let stars = [];
+        let currentLevel = 0;
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            player.x = width / 2;
+            player.y = height - 100;
+            
+            stars = [];
+            for(let i=0; i<100; i++) {
+                stars.push({ x: Math.random() * width, y: Math.random() * height, s: Math.random() * 2 + 0.5 });
+            }
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyM') {
+                isAutoPilot = !isAutoPilot;
+                modeIndicator.innerText = isAutoPilot ? "SYSTEM: AUTO-PILOT" : "SYSTEM: MANUAL";
+                modeIndicator.style.color = isAutoPilot ? "#22d3ee" : "#f472b6";
+            }
+            if (!isAutoPilot && gameState === 'PLAYING') {
+                if (e.code === 'ArrowLeft' || e.code === 'KeyA') player.x -= 15;
+                if (e.code === 'ArrowRight' || e.code === 'KeyD') player.x += 15;
+                if (e.code === 'Space') fireBullet();
+            }
+        });
+
+        function spawnWave() {
+            currentLevel++;
+            const rows = 3;
+            const cols = Math.floor(width / 100);
+            const color = themeColors[currentLevel % themeColors.length];
+            
+            for (let r = 0; r < rows; r++) {
+                for (let c = 1; c < cols; c++) {
+                    enemies.push({
+                        x: c * 100 + (width - cols * 100) / 2,
+                        y: r * 60 - 300,
+                        targetY: r * 60 + 120,
+                        w: 30,
+                        h: 25,
+                        color: color,
+                        vx: 1.2,
+                        phase: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+        }
+
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 10; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    life: 1.0,
+                    color: color
+                });
+            }
+        }
+
+        function runAutoPilot() {
+            if (!isAutoPilot) return;
+
+            let targetX = width / 2;
+            if (enemies.length > 0) {
+                const nearest = enemies.reduce((prev, curr) => 
+                    Math.abs(curr.x - player.x) < Math.abs(prev.x - player.x) ? curr : prev
+                );
+                targetX = nearest.x;
+                if (Math.abs(player.x - nearest.x) < 30 && player.cooldown <= 0) fireBullet();
+            }
+
+            enemyBullets.forEach(b => {
+                if (Math.abs(b.x - player.x) < 50 && b.y > height - 250) {
+                    targetX = b.x > player.x ? player.x - 70 : player.x + 70;
+                }
+            });
+
+            player.x += (targetX - player.x) * 0.12;
+            player.x = Math.max(40, Math.min(width - 40, player.x));
+        }
+
+        function fireBullet() {
+            if (player.cooldown > 0) return;
+            player.bullets.push({ x: player.x, y: player.y - 20, v: 14 });
+            player.cooldown = 10;
+        }
+
+        function update() {
+            frameCount++;
+
+            // Stars always move
+            stars.forEach(s => {
+                s.y += s.s;
+                if (s.y > height) s.y = 0;
+            });
+
+            if (gameState === 'PLAYING') {
+                runAutoPilot();
+                if (player.cooldown > 0) player.cooldown--;
+
+                player.bullets.forEach((b, i) => {
+                    b.y -= b.v;
+                    if (b.y < -20) player.bullets.splice(i, 1);
+                    enemies.forEach((e, ei) => {
+                        if (b.x > e.x - 20 && b.x < e.x + 20 && b.y > e.y - 15 && b.y < e.y + 15) {
+                            createExplosion(e.x, e.y, e.color.main);
+                            enemies.splice(ei, 1);
+                            player.bullets.splice(i, 1);
+                        }
+                    });
+                });
+
+                enemyBullets.forEach((b, i) => {
+                    b.y += b.v;
+                    if (b.y > height + 20) enemyBullets.splice(i, 1);
+                    if (Math.abs(b.x - player.x) < 25 && Math.abs(b.y - player.y) < 20) {
+                        createExplosion(player.x, player.y, '#22d3ee');
+                        enemyBullets.splice(i, 1);
+                        if (!isAutoPilot) {
+                            gameState = 'MENU';
+                            overlay.classList.remove('hidden');
+                            overlay.style.opacity = '1';
+                        }
+                    }
+                });
+
+                if (enemies.length === 0) spawnWave();
+
+                enemies.forEach(e => {
+                    if (e.y < e.targetY) e.y += 2;
+                    e.x += Math.sin(frameCount * 0.02 + e.phase) * e.vx;
+                    if (Math.random() < 0.006) {
+                        enemyBullets.push({ x: e.x, y: e.y + 10, v: 5, color: e.color });
+                    }
+                });
+            }
+
+            particles.forEach((p, i) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.02;
+                if (p.life <= 0) particles.splice(i, 1);
+            });
+
+            draw();
+            requestAnimationFrame(update);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Stars
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            stars.forEach(s => ctx.fillRect(s.x, s.y, 1, 1));
+
+            // Player Ship
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#22d3ee';
+            ctx.strokeStyle = '#22d3ee';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, -22);
+            ctx.lineTo(18, 15);
+            ctx.lineTo(0, 4);
+            ctx.lineTo(-18, 15);
+            ctx.closePath();
+            ctx.stroke();
+            
+            if (isAutoPilot || frameCount % 10 < 5) {
+                ctx.fillStyle = 'rgba(34, 211, 238, 0.3)';
+                ctx.beginPath();
+                ctx.moveTo(-6, 8);
+                ctx.lineTo(0, 20 + Math.random() * 8);
+                ctx.lineTo(6, 8);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Enemies
+            enemies.forEach(e => {
+                ctx.save();
+                ctx.translate(e.x, e.y);
+                ctx.strokeStyle = e.color.main;
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = e.color.glow;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-15, -8);
+                ctx.lineTo(15, -8);
+                ctx.lineTo(12, 10);
+                ctx.lineTo(-12, 10);
+                ctx.closePath();
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            // Bullets
+            ctx.shadowBlur = 10;
+            player.bullets.forEach(b => {
+                ctx.fillStyle = '#fff';
+                ctx.shadowColor = '#22d3ee';
+                ctx.fillRect(b.x - 1, b.y, 2, 12);
+            });
+
+            enemyBullets.forEach(b => {
+                ctx.fillStyle = b.color.main;
+                ctx.shadowColor = b.color.main;
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, 3, 3);
+            });
+            ctx.globalAlpha = 1.0;
+            ctx.shadowBlur = 0;
+        }
+
+        startBtn.addEventListener('click', () => {
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                gameState = 'PLAYING';
+                enemies = [];
+                enemyBullets = [];
+                currentLevel = 0;
+                spawnWave();
+            }, 500);
+        });
+
+        requestAnimationFrame(update);
+    </script>
+</body>
+</html>
+

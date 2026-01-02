@@ -53,6 +53,8 @@ export async function initGamesMode(mode, canvas) {
         await loadAndInjectMario();
     } else if (mode === 'flap') {
         await loadAndInjectFlap();
+    } else if (mode === 'neon_vector') {
+        await loadAndInjectNeonVector();
     }
     
     // Show the game container
@@ -255,6 +257,45 @@ async function loadAndInjectFlap() {
 }
 
 /**
+ * Load and inject Neon Vector game
+ */
+async function loadAndInjectNeonVector() {
+    // Remove existing iframe if present
+    if (gameIframe) {
+        gameIframe.remove();
+        gameIframe = null;
+    }
+    
+    // Create iframe for the Neon Vector game
+    gameIframe = document.createElement('iframe');
+    gameIframe.id = 'neon-vector-iframe';
+    gameIframe.style.cssText = `
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: #000;
+    `;
+    gameIframe.sandbox = 'allow-scripts allow-same-origin allow-forms';
+    
+    // Load the template
+    try {
+        const template = await loadTemplate('neon_vector');
+        if (template && template.html) {
+            // If template has HTML content, use it
+            gameIframe.srcdoc = template.html;
+        } else {
+            // Fallback: load from file directly
+            gameIframe.src = 'src/templates/games/neon_vector.html';
+        }
+    } catch (error) {
+        console.warn('Failed to load Neon Vector template, using direct path:', error);
+        gameIframe.src = 'src/templates/games/neon_vector.html';
+    }
+    
+    gameContainer.appendChild(gameIframe);
+}
+
+/**
  * Render games mode (games handle their own rendering)
  * @param {string} mode - The game mode name
  * @param {CanvasRenderingContext2D} ctx - The canvas context (not used for games)
@@ -295,6 +336,6 @@ export function cleanupGame() {
  * @returns {boolean} True if the mode is a games mode
  */
 export function isGamesMode(mode) {
-    return mode === 'tetris' || mode === 'snake' || mode === 'pacman' || mode === 'mario' || mode === 'flap' || mode.startsWith('game_');
+    return mode === 'tetris' || mode === 'snake' || mode === 'pacman' || mode === 'mario' || mode === 'flap' || mode === 'neon_vector' || mode.startsWith('game_');
 }
 
