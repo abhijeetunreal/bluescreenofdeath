@@ -228,6 +228,97 @@ export function drawWin10Spinner(ctx, x, y, radius, frame) {
     }
 }
 
+// Windows 11 loading spinner with 5 dots - matches HTML CSS animation exactly
+export function drawWin11Spinner(ctx, x, y, radius, frame) {
+    const dotCount = 5;
+    const fps = 60;
+    const cycleTime = 4.5 * fps; // 4.5 seconds = 270 frames (slowed down)
+    
+    // Delays for each dot (in seconds, converted to frames)
+    const delays = [0.1, 0.2, 0.3, 0.4, 0.5].map(d => d * fps);
+    
+    // Accurate cubic bezier function for cubic-bezier(0.4, 0, 0.2, 1)
+    // This solves the cubic bezier equation using binary search
+    function cubicBezier(t) {
+        if (t <= 0) return 0;
+        if (t >= 1) return 1;
+        
+        // Control points: P1 = (0.4, 0), P2 = (0.2, 1)
+        const cx = 0.4;
+        const cy = 0;
+        const cx2 = 0.2;
+        const cy2 = 1;
+        
+        // Binary search to find the t value that gives us the desired x
+        let low = 0, high = 1;
+        for (let i = 0; i < 30; i++) {
+            const mid = (low + high) / 2;
+            // Cubic bezier x coordinate
+            const bx = 3 * (1 - mid) * (1 - mid) * mid * cx + 
+                       3 * (1 - mid) * mid * mid * cx2 + 
+                       mid * mid * mid;
+            if (bx < t) low = mid;
+            else high = mid;
+        }
+        const tValue = (low + high) / 2;
+        
+        // Now calculate the y coordinate (eased value)
+        const by = 3 * (1 - tValue) * (1 - tValue) * tValue * cy + 
+                   3 * (1 - tValue) * tValue * tValue * cy2 + 
+                   tValue * tValue * tValue;
+        return by;
+    }
+    
+    for (let i = 0; i < dotCount; i++) {
+        // Calculate current frame with delay
+        const adjustedFrame = (frame + delays[i]) % cycleTime;
+        const rawProgress = adjustedFrame / cycleTime;
+        
+        // Apply cubic bezier easing to the entire animation
+        const easedProgress = cubicBezier(rawProgress);
+        
+        // Keyframes from HTML:
+        // 0%: rotate(225deg) translate(25px) rotate(-225deg), opacity: 1
+        // 50%: rotate(405deg) translate(25px) rotate(-405deg), opacity: 1
+        // 100%: rotate(585deg) translate(25px) rotate(-585deg), opacity: 0
+        
+        // Interpolate rotation based on eased progress
+        let rotation;
+        if (easedProgress <= 0.5) {
+            // From 0% to 50% keyframe: 225deg to 405deg
+            const segmentProgress = easedProgress / 0.5; // 0 to 1 within this segment
+            rotation = (225 * Math.PI) / 180 + segmentProgress * ((405 - 225) * Math.PI) / 180;
+        } else {
+            // From 50% to 100% keyframe: 405deg to 585deg
+            const segmentProgress = (easedProgress - 0.5) / 0.5; // 0 to 1 within this segment
+            rotation = (405 * Math.PI) / 180 + segmentProgress * ((585 - 405) * Math.PI) / 180;
+        }
+        
+        // Position dot at radius distance from center
+        const dx = x + Math.cos(rotation) * radius;
+        const dy = y + Math.sin(rotation) * radius;
+        
+        // Interpolate opacity based on eased progress
+        let opacity;
+        if (easedProgress <= 0.5) {
+            // From 0% to 50%: opacity stays at 1
+            opacity = 1;
+        } else {
+            // From 50% to 100%: opacity fades from 1 to 0
+            const segmentProgress = (easedProgress - 0.5) / 0.5; // 0 to 1 within this segment
+            opacity = 1 - segmentProgress;
+        }
+        
+        // Dot size: 6px diameter = 3px radius
+        const dotRadius = 3;
+        
+        ctx.beginPath();
+        ctx.arc(dx, dy, dotRadius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+        ctx.fill();
+    }
+}
+
 // Draw a rounded rectangle
 export function drawRoundedRect(ctx, x, y, width, height, radius) {
     ctx.beginPath();

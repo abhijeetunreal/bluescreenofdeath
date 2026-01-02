@@ -1,7 +1,7 @@
 // Windows modes
 
 import * as state from '../core/state.js';
-import { drawWhiteLogo, drawWinSpinner, drawWinXPUpdate, drawWin10Spinner } from '../utils/drawing.js';
+import { drawWhiteLogo, drawWinSpinner, drawWinXPUpdate, drawWin10Spinner, drawWin11Spinner } from '../utils/drawing.js';
 import { imgWin } from '../utils/assets.js';
 import { drawQRCode } from '../utils/qrcode.js';
 import { loadTemplate } from '../utils/template-loader.js';
@@ -17,6 +17,17 @@ let enhancedBsodState = {
     blackScreenActive: false,
     blackScreenStartFrame: 0,
     reached100Frame: 0
+};
+
+// Mode-specific state for Windows 11 loading screen
+let win11LoadingState = {
+    progress: 0,
+    lastUpdateFrame: 0,
+    nextUpdateDelay: 180, // Initial delay: 3 seconds (180 frames at 60fps)
+    blackScreenActive: false,
+    blackScreenStartFrame: 0,
+    reached100Frame: 0,
+    welcomeScreenActive: false
 };
 
 export async function initWindowsMode(mode, canvas) {
@@ -39,6 +50,19 @@ export async function initWindowsMode(mode, canvas) {
             reached100Frame: 0
         };
     }
+    
+    // Reset Windows 11 loading state when initializing that mode
+    if (mode === 'win_11_loading') {
+        win11LoadingState = {
+            progress: 0,
+            lastUpdateFrame: 0,
+            nextUpdateDelay: 180, // Initial delay: 3 seconds (180 frames at 60fps)
+            blackScreenActive: false,
+            blackScreenStartFrame: 0,
+            reached100Frame: 0,
+            welcomeScreenActive: false
+        };
+    }
 }
 
 export function renderWindowsMode(mode, ctx, canvas) {
@@ -46,28 +70,6 @@ export function renderWindowsMode(mode, ctx, canvas) {
     const progress = state.getProgress();
     
     switch(mode) {
-        case 'win_10_upd': {
-            // Render template (preloaded during init)
-            const template = templateCache.get(mode);
-            const percentComplete = Math.min(100, Math.floor(progress * 100));
-            renderTemplateToCanvas(template, ctx, canvas, { percentComplete });
-            
-            // Main section positioned at 40% from top (matching reference)
-            const mainSectionY = canvas.height * 0.4;
-            
-            // Windows logo - positioned above spinner
-            if (imgWin.complete && imgWin.naturalWidth > 0) {
-                const logoSize = 80;
-                const logoX = canvas.width / 2 - logoSize / 2;
-                const logoY = mainSectionY - 120;
-                ctx.drawImage(imgWin, logoX, logoY, logoSize, logoSize);
-            }
-            
-            // Improved spinner with 6 dots - positioned above text
-            const loaderSize = 40;
-            drawWin10Spinner(ctx, canvas.width/2, mainSectionY - loaderSize/2 - 20, loaderSize/2, frame);
-            break;
-        }
         case 'win_xp_upd':
             drawWinXPUpdate(ctx, canvas, progress);
             break;
@@ -333,6 +335,107 @@ export function renderWindowsMode(mode, ctx, canvas) {
             if (frame > biosDelay * 16) {
                 ctx.fillStyle = '#ffff00';
                 ctx.fillText('Booting from Hard Disk...', biosMargin, biosY);
+            }
+            break;
+        }
+        case 'win_11_loading': {
+            // Handle welcome screen (after black screen transition)
+            if (win11LoadingState.welcomeScreenActive) {
+                // Welcome screen with blue background
+                ctx.fillStyle = '#005a9e';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '48px "Segoe UI Variable", "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Welcome', canvas.width / 2, canvas.height / 2);
+                break;
+            }
+            
+            // Handle black screen overlay
+            if (win11LoadingState.blackScreenActive) {
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // After 3 seconds of black screen, transition to welcome screen
+                const blackScreenDuration = frame - win11LoadingState.blackScreenStartFrame;
+                if (blackScreenDuration > 180) { // ~3 seconds at 60fps
+                    win11LoadingState.welcomeScreenActive = true;
+                }
+                break;
+            }
+            
+            // Update progress with realistic stuttering animation
+            if (win11LoadingState.progress < 100) {
+                const framesSinceLastUpdate = frame - win11LoadingState.lastUpdateFrame;
+                
+                if (framesSinceLastUpdate >= win11LoadingState.nextUpdateDelay) {
+                    let increment = 1;
+                    
+                    // Realistic progress behavior matching HTML
+                    if (win11LoadingState.progress < 30) {
+                        // Fast updates: 1-3% increments
+                        increment = Math.floor(Math.random() * 3) + 1;
+                    } else if (win11LoadingState.progress < 90) {
+                        // Slow updates: random 0-1% increments (30% chance of increment)
+                        increment = Math.random() > 0.7 ? 1 : 0;
+                    } else {
+                        // Very slow updates: random 0-1% increments (5% chance of increment)
+                        increment = Math.random() > 0.95 ? 1 : 0;
+                    }
+                    
+                    win11LoadingState.progress = Math.min(100, win11LoadingState.progress + increment);
+                    win11LoadingState.lastUpdateFrame = frame;
+                    
+                    // Random delay based on progress stage
+                    if (win11LoadingState.progress < 90) {
+                        // 500-2000ms delay (30-120 frames at 60fps)
+                        win11LoadingState.nextUpdateDelay = Math.floor(Math.random() * 90) + 30;
+                    } else {
+                        // 2000-5000ms delay (120-300 frames at 60fps)
+                        win11LoadingState.nextUpdateDelay = Math.floor(Math.random() * 180) + 120;
+                    }
+                }
+            } else if (win11LoadingState.progress >= 100 && win11LoadingState.reached100Frame === 0) {
+                // Just reached 100%, record the frame
+                win11LoadingState.reached100Frame = frame;
+            } else if (win11LoadingState.reached100Frame > 0) {
+                // Wait 3 seconds at 100% before showing black screen
+                const framesAt100 = frame - win11LoadingState.reached100Frame;
+                if (framesAt100 > 180) { // ~3 seconds at 60fps
+                    win11LoadingState.blackScreenActive = true;
+                    win11LoadingState.blackScreenStartFrame = frame;
+                }
+            }
+            
+            // Render background (black)
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Render template (if available) for text elements
+            const template = templateCache.get(mode);
+            if (template) {
+                const percentComplete = Math.floor(win11LoadingState.progress);
+                renderTemplateToCanvas(template, ctx, canvas, { percentComplete });
+            }
+            
+            // Draw 5-dot spinner - centered above text
+            const spinnerY = canvas.height * 0.4; // Position at 40% from top
+            const spinnerRadius = 35; // Increased from 25px to 35px for more spacing between dots
+            drawWin11Spinner(ctx, canvas.width / 2, spinnerY - 30, spinnerRadius, frame);
+            
+            // Draw text manually if template didn't render (fallback)
+            if (!template) {
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '28px "Segoe UI Variable", "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Working on updates', canvas.width / 2, canvas.height * 0.4 + 30);
+                
+                ctx.fillStyle = '#cccccc';
+                ctx.font = '18px "Segoe UI Variable", "Segoe UI", sans-serif';
+                const percentComplete = Math.floor(win11LoadingState.progress);
+                ctx.fillText(`${percentComplete}% complete`, canvas.width / 2, canvas.height * 0.4 + 70);
+                ctx.fillText('Please keep your computer on.', canvas.width / 2, canvas.height * 0.4 + 110);
             }
             break;
         }
