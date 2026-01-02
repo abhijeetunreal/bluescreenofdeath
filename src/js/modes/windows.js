@@ -71,35 +71,6 @@ export function renderWindowsMode(mode, ctx, canvas) {
         case 'win_xp_upd':
             drawWinXPUpdate(ctx, canvas, progress);
             break;
-        case 'win_10_bsod': {
-            // Render template (preloaded during init)
-            const template = templateCache.get(mode);
-            const percentComplete = Math.min(100, Math.floor(progress * 100));
-            renderTemplateToCanvas(template, ctx, canvas, { percentComplete });
-            
-            const leftMargin = 80;
-            const topMargin = 80;
-            const qrSize = 180;
-            // QR code positioned with left edge aligned with text block
-            const qrX = leftMargin;
-            const qrY = topMargin;
-            
-            // Sad face emoji - positioned to the left, partially behind QR code
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 140px "Segoe UI", sans-serif';
-            ctx.fillText(':(', leftMargin - 60, topMargin + 100);
-            
-            // White horizontal bars to the left of QR code (characteristic Windows 10 BSOD design)
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(qrX - 20, qrY + 20, 15, 3);
-            ctx.fillRect(qrX - 20, qrY + 30, 15, 3);
-            
-            // QR code - drawn after sad face so it overlaps from the right
-            drawQRCode(ctx, qrX, qrY, qrSize);
-            
-            ctx.textAlign = 'left';
-            break;
-        }
         case 'win_10_bsod_enhanced': {
             // Handle black screen overlay
             if (enhancedBsodState.blackScreenActive) {
