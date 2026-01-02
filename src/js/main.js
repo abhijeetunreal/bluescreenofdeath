@@ -7,6 +7,7 @@ import { toggleMobileMenu, closeMobileMenu } from './ui/mobile-menu.js';
 import { initDropdowns } from './ui/dropdowns.js';
 import { initEventHandlers, toggleFullscreen } from './events/handlers.js';
 import { initHomeOverlay, showHomeOverlay } from './ui/home-overlay.js';
+import { initGameScreensaver, toggleGameScreensaver } from './ui/game-screensaver.js';
 
 // Make functions available globally for HTML onclick handlers
 window.setMode = setMode;
@@ -14,6 +15,7 @@ window.toggleMobileMenu = toggleMobileMenu;
 window.closeMobileMenu = closeMobileMenu;
 window.toggleFullscreen = toggleFullscreen;
 window.showHomeOverlay = showHomeOverlay;
+window.toggleGameScreensaver = toggleGameScreensaver;
 
 // Initialize canvas
 resizeCanvas();
@@ -35,4 +37,7 @@ initEventHandlers();
 
 // Initialize home overlay (shows on first visit)
 initHomeOverlay();
+
+// Initialize game screensaver
+initGameScreensaver();
 
