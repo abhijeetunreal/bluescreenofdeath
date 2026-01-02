@@ -31,7 +31,7 @@ export async function loadTemplate(modeName) {
         templatePath = `src/templates/apple/${modeName}.html`;
     } else if (['broken_screen', 'white_noise', 'radar', 'hacker', 'no_signal'].includes(modeName)) {
         templatePath = `src/templates/pranks/${modeName}.html`;
-    } else if (modeName === 'tetris' || modeName === 'snake' || modeName === 'mario' || modeName.startsWith('game_')) {
+    } else if (modeName === 'tetris' || modeName === 'snake' || modeName === 'mario' || modeName === 'flap' || modeName.startsWith('game_')) {
         templatePath = `src/templates/games/${modeName}.html`;
     } else {
         templatePath = `src/templates/misc/${modeName}.html`;
@@ -50,7 +50,7 @@ export async function loadTemplate(modeName) {
         const htmlString = await response.text();
         
         // Games templates are full HTML pages, return raw HTML
-        if (modeName === 'tetris' || modeName === 'snake' || modeName === 'mario' || modeName.startsWith('game_')) {
+        if (modeName === 'tetris' || modeName === 'snake' || modeName === 'mario' || modeName === 'flap' || modeName.startsWith('game_')) {
             const gameTemplate = { html: htmlString, type: 'game' };
             
             // Enforce cache size limit (LRU eviction)
