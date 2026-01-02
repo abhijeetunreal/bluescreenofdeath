@@ -50,8 +50,8 @@ const imgApple = createImageWithFallback(
 
 // White Apple logo for dark backgrounds (better quality than filtering)
 const imgAppleWhite = createImageWithFallback(
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Apple_Logo_White.svg/512px-Apple_Logo_White.svg.png',
-    null,
+    'https://upload.wikimedia.org/wikipedia/commons/8/80/Apple_Logo_White.svg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/256px-Apple_logo_black.svg.png',
     'Apple logo (white)'
 );
 

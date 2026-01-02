@@ -39,6 +39,10 @@ export async function loadTemplate(modeName) {
         const response = await fetch(templatePath);
         if (!response.ok) {
             // Template doesn't exist - return null (mode will use pure Canvas rendering)
+            // Don't log 404 errors as they're expected for modes without templates
+            if (response.status !== 404) {
+                console.warn(`Failed to load template for ${modeName}: HTTP ${response.status}`);
+            }
             return null;
         }
         const htmlString = await response.text();
@@ -57,7 +61,10 @@ export async function loadTemplate(modeName) {
         accessOrder.push(modeName);
         return parsed;
     } catch (error) {
-        console.warn(`Failed to load template for ${modeName}:`, error);
+        // Only log non-network errors (404s are expected and handled above)
+        if (error.name !== 'TypeError' || !error.message.includes('fetch')) {
+            console.warn(`Failed to load template for ${modeName}:`, error);
+        }
         return null;
     }
 }
