@@ -9,6 +9,73 @@ let gameIframe = null;
 let currentGameMode = null;
 
 /**
+ * Automatically start a game by clicking the start button after iframe loads
+ * @param {HTMLIFrameElement} iframe - The game iframe element
+ * @param {string} gameMode - The game mode name (e.g., 'tetris', 'chess')
+ */
+function autoStartGame(iframe, gameMode) {
+    const MAX_ATTEMPTS = 50; // Maximum polling attempts
+    const POLL_INTERVAL = 100; // Milliseconds between attempts
+    let attempts = 0;
+    
+    const tryClickButton = () => {
+        attempts++;
+        
+        try {
+            // Try to access iframe content
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+            
+            if (!iframeDoc) {
+                // Iframe not ready yet, try again
+                if (attempts < MAX_ATTEMPTS) {
+                    setTimeout(tryClickButton, POLL_INTERVAL);
+                }
+                return;
+            }
+            
+            // For chess, click the CPU vs CPU mode button
+            if (gameMode === 'chess') {
+                const modeButton = iframeDoc.getElementById('mode-cvc');
+                if (modeButton) {
+                    modeButton.click();
+                    return;
+                }
+            } else {
+                // For all other games, click the start button
+                const startButton = iframeDoc.getElementById('start-btn');
+                if (startButton) {
+                    startButton.click();
+                    return;
+                }
+            }
+            
+            // Button not found yet, try again
+            if (attempts < MAX_ATTEMPTS) {
+                setTimeout(tryClickButton, POLL_INTERVAL);
+            }
+        } catch (error) {
+            // Cross-origin or other error, try again if we have attempts left
+            if (attempts < MAX_ATTEMPTS) {
+                setTimeout(tryClickButton, POLL_INTERVAL);
+            } else {
+                console.warn(`Failed to auto-start ${gameMode}:`, error);
+            }
+        }
+    };
+    
+    // Wait for iframe to load, then start polling
+    if (iframe.contentDocument || iframe.contentWindow?.document) {
+        // Already loaded
+        tryClickButton();
+    } else {
+        // Wait for load event
+        iframe.addEventListener('load', () => {
+            setTimeout(tryClickButton, POLL_INTERVAL);
+        }, { once: true });
+    }
+}
+
+/**
  * Initialize a games mode
  * @param {string} mode - The game mode name (e.g., 'tetris')
  * @param {HTMLCanvasElement} canvas - The main canvas element
@@ -108,6 +175,7 @@ async function loadAndInjectTetris() {
     }
     
     gameContainer.appendChild(gameIframe);
+    autoStartGame(gameIframe, 'tetris');
 }
 
 /**
@@ -147,6 +215,7 @@ async function loadAndInjectSnake() {
     }
     
     gameContainer.appendChild(gameIframe);
+    autoStartGame(gameIframe, 'snake');
 }
 
 /**
@@ -186,6 +255,7 @@ async function loadAndInjectPacman() {
     }
     
     gameContainer.appendChild(gameIframe);
+    autoStartGame(gameIframe, 'pacman');
 }
 
 /**
@@ -225,6 +295,7 @@ async function loadAndInjectMario() {
     }
     
     gameContainer.appendChild(gameIframe);
+    autoStartGame(gameIframe, 'mario');
 }
 
 /**
@@ -264,6 +335,7 @@ async function loadAndInjectFlap() {
     }
     
     gameContainer.appendChild(gameIframe);
+    autoStartGame(gameIframe, 'flap');
 }
 
 /**
@@ -303,6 +375,7 @@ async function loadAndInjectNeonVector() {
     }
     
     gameContainer.appendChild(gameIframe);
+    autoStartGame(gameIframe, 'neon_vector');
 }
 
 /**
@@ -342,6 +415,7 @@ async function loadAndInjectNeonBoids() {
     }
     
     gameContainer.appendChild(gameIframe);
+    autoStartGame(gameIframe, 'neon_boids');
 }
 
 /**
@@ -381,6 +455,7 @@ async function loadAndInjectChess() {
     }
     
     gameContainer.appendChild(gameIframe);
+    autoStartGame(gameIframe, 'chess');
 }
 
 /**
@@ -420,6 +495,7 @@ async function loadAndInjectCircularMaze() {
     }
     
     gameContainer.appendChild(gameIframe);
+    autoStartGame(gameIframe, 'circular_maze');
 }
 
 /**
@@ -459,6 +535,7 @@ async function loadAndInjectMaze() {
     }
     
     gameContainer.appendChild(gameIframe);
+    autoStartGame(gameIframe, 'maze');
 }
 
 /**
@@ -498,6 +575,7 @@ async function loadAndInjectNeonEcosystem() {
     }
     
     gameContainer.appendChild(gameIframe);
+    autoStartGame(gameIframe, 'neon_ecosystem');
 }
 
 /**

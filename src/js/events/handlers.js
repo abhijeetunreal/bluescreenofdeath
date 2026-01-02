@@ -11,6 +11,8 @@ const isTouchDevice = getIsTouchDevice();
 let lastMouseY = 0;
 let abortController = null;
 let orientationTimeout = null;
+let lastTapTime = 0;
+const DOUBLE_TAP_THRESHOLD = 300; // milliseconds
 
 // Get fullscreen API with browser prefix support
 function getFullscreenAPI() {
@@ -134,26 +136,46 @@ export function initEventHandlers() {
         }
     }
     
-    // Consolidated touch handler (removed duplicate canvas touchstart)
+    // Consolidated touch handler with double tap detection
     window.addEventListener('touchstart', (e) => {
         // Don't reset timer if touching mobile menu (but allow if menu is closed)
         const mobileMenu = document.getElementById('mobileMenu');
         const isMenuOpen = mobileMenu && mobileMenu.classList.contains('show');
         
-        if (!isMenuOpen && !e.target.closest('#mobileMenuBtn')) {
-            resetUITimer();
-        } else if (!e.target.closest('#mobileMenu') && !e.target.closest('#mobileMenuBtn')) {
-            // If menu is open and clicking outside, close it and reset timer
-            closeMobileMenu();
-            resetUITimer();
+        // Check if this is a double tap (within 300ms of last tap)
+        const currentTime = Date.now();
+        const timeSinceLastTap = currentTime - lastTapTime;
+        const isDoubleTap = timeSinceLastTap < DOUBLE_TAP_THRESHOLD && timeSinceLastTap > 0;
+        
+        // Update last tap time
+        lastTapTime = currentTime;
+        
+        // Only show UI on double tap (not single tap)
+        if (isDoubleTap) {
+            if (!isMenuOpen && !e.target.closest('#mobileMenuBtn')) {
+                resetUITimer();
+            } else if (!e.target.closest('#mobileMenu') && !e.target.closest('#mobileMenuBtn')) {
+                // If menu is open and clicking outside, close it and reset timer
+                closeMobileMenu();
+                resetUITimer();
+            }
         }
     }, { signal });
     
-    // Canvas interaction handlers
+    // Canvas interaction handlers (double tap for mobile)
     if (canvas) {
         canvas.addEventListener('click', (e) => {
             if (isTouchDevice) {
-                resetUITimer();
+                // Double tap detection for canvas clicks
+                const currentTime = Date.now();
+                const timeSinceLastTap = currentTime - lastTapTime;
+                const isDoubleTap = timeSinceLastTap < DOUBLE_TAP_THRESHOLD && timeSinceLastTap > 0;
+                
+                if (isDoubleTap) {
+                    resetUITimer();
+                }
+                
+                lastTapTime = currentTime;
             }
         }, { signal });
     }
