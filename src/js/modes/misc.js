@@ -15,6 +15,15 @@ export async function initMiscMode(mode, canvas) {
     } else if (mode === 'quotes') {
         const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
         state.setCurrentQuote(randomQuote);
+    } else if (mode === 'dvd') {
+        // Reset DVD position to center of canvas on resize
+        const dvdPos = state.getDvdPos();
+        dvdPos.x = Math.max(0, Math.min(canvas.width - 120, dvdPos.x || canvas.width / 2));
+        dvdPos.y = Math.max(0, Math.min(canvas.height - 60, dvdPos.y || canvas.height / 2));
+        // Ensure position is within bounds
+        if (dvdPos.x + 120 > canvas.width) dvdPos.x = canvas.width - 120;
+        if (dvdPos.y + 60 > canvas.height) dvdPos.y = canvas.height - 60;
+        state.setDvdPos(dvdPos);
     }
     
     // Preload template for this mode (if it uses one)
@@ -36,7 +45,7 @@ export function renderMiscMode(mode, ctx, canvas) {
             renderTemplateToCanvas(ubuntuTemplate, ctx, canvas, {});
             
             // Ubuntu logo - positioned well above text to avoid overlap
-            if (imgUbuntu.complete && imgUbuntu.naturalWidth > 0) {
+            if (imgUbuntu && imgUbuntu.complete && imgUbuntu.naturalWidth > 0 && !imgUbuntu._loadFailed) {
                 ctx.textAlign = 'center';
                 const logoSize = 120;
                 const logoX = canvas.width / 2 - logoSize / 2;
@@ -66,8 +75,9 @@ export function renderMiscMode(mode, ctx, canvas) {
                 // Faster final section
                 slowProgress = 0.7 + (rawProgress - 0.7) * 1.5;
             }
-            slowProgress = Math.min(1, slowProgress);
-            const percentComplete = Math.min(100, Math.floor(slowProgress * 100));
+            // Ensure progress is within valid bounds
+            slowProgress = Math.max(0, Math.min(1, slowProgress));
+            const percentComplete = Math.max(0, Math.min(100, Math.floor(slowProgress * 100)));
             renderTemplateToCanvas(chromeosTemplate, ctx, canvas, { percentComplete });
             
             // Draw official Chrome logo - positioned above text
@@ -77,7 +87,7 @@ export function renderMiscMode(mode, ctx, canvas) {
             const logoY = canvas.height * 0.35 - 40 - logoSize / 2;
             
             // Draw official Chrome logo image
-            if (imgChrome.complete && imgChrome.naturalWidth > 0) {
+            if (imgChrome && imgChrome.complete && imgChrome.naturalWidth > 0 && !imgChrome._loadFailed) {
                 ctx.drawImage(imgChrome, logoX, logoY, logoSize, logoSize);
             }
             

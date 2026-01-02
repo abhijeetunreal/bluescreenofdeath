@@ -12,6 +12,16 @@ let hackerLines = [];
 let crackLines = [];
 let dvdPos = { x: 100, y: 100, vx: 3, vy: 3, color: '#fff' };
 let currentQuote = "";
+let whiteNoiseImageData = null;
+let whiteNoiseCanvasSize = { width: 0, height: 0 };
+
+// macOS Boot state
+let bootProgress = 0;
+let bootPhase = 'booting'; // 'booting' | 'transitioning' | 'login'
+let bootStartFrame = 0;
+let lastProgressUpdate = 0;
+let nextProgressDelay = 0;
+let transitionOpacity = 0;
 
 export function getCurrentMode() {
     return currentMode;
@@ -35,6 +45,12 @@ export function getFrame() {
 
 export function incrementFrame() {
     frame++;
+    // Reset frame counter periodically to prevent overflow
+    // At 60fps, Number.MAX_SAFE_INTEGER would be reached after ~49 days
+    // Reset every ~24 days (2^31 frames) to be safe
+    if (frame >= 2147483647) {
+        frame = 0;
+    }
 }
 
 export function resetFrame() {
@@ -47,6 +63,11 @@ export function getProgress() {
 
 export function incrementProgress(amount = 0.02) {
     progress += amount;
+    // Ensure progress stays within reasonable bounds to prevent overflow
+    // Reset to 0 if it exceeds a very large value (handles edge cases)
+    if (progress > 1000000) {
+        progress = progress % 100;
+    }
 }
 
 export function resetProgress() {
@@ -106,5 +127,80 @@ export function getCurrentQuote() {
 
 export function setCurrentQuote(quote) {
     currentQuote = quote;
+}
+
+// macOS Boot state functions
+export function getBootProgress() {
+    return bootProgress;
+}
+
+export function setBootProgress(progress) {
+    bootProgress = Math.max(0, Math.min(100, progress));
+}
+
+export function getBootPhase() {
+    return bootPhase;
+}
+
+export function setBootPhase(phase) {
+    bootPhase = phase;
+}
+
+export function getBootStartFrame() {
+    return bootStartFrame;
+}
+
+export function setBootStartFrame(frame) {
+    bootStartFrame = frame;
+}
+
+export function getLastProgressUpdate() {
+    return lastProgressUpdate;
+}
+
+export function setLastProgressUpdate(frame) {
+    lastProgressUpdate = frame;
+}
+
+export function getNextProgressDelay() {
+    return nextProgressDelay;
+}
+
+export function setNextProgressDelay(delay) {
+    nextProgressDelay = delay;
+}
+
+export function getTransitionOpacity() {
+    return transitionOpacity;
+}
+
+export function setTransitionOpacity(opacity) {
+    transitionOpacity = Math.max(0, Math.min(1, opacity));
+}
+
+export function resetBootState() {
+    bootProgress = 0;
+    bootPhase = 'booting';
+    bootStartFrame = 0;
+    lastProgressUpdate = 0;
+    nextProgressDelay = 0;
+    transitionOpacity = 0;
+}
+
+// White noise ImageData state functions
+export function getWhiteNoiseImageData() {
+    return whiteNoiseImageData;
+}
+
+export function setWhiteNoiseImageData(imageData) {
+    whiteNoiseImageData = imageData;
+}
+
+export function getWhiteNoiseCanvasSize() {
+    return whiteNoiseCanvasSize;
+}
+
+export function setWhiteNoiseCanvasSize(size) {
+    whiteNoiseCanvasSize = size;
 }
 

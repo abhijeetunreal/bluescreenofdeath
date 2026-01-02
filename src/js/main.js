@@ -6,12 +6,14 @@ import { resetUITimer } from './ui/ui-timer.js';
 import { toggleMobileMenu, closeMobileMenu } from './ui/mobile-menu.js';
 import { initDropdowns } from './ui/dropdowns.js';
 import { initEventHandlers, toggleFullscreen } from './events/handlers.js';
+import { initHomeOverlay, showHomeOverlay } from './ui/home-overlay.js';
 
 // Make functions available globally for HTML onclick handlers
 window.setMode = setMode;
 window.toggleMobileMenu = toggleMobileMenu;
 window.closeMobileMenu = closeMobileMenu;
 window.toggleFullscreen = toggleFullscreen;
+window.showHomeOverlay = showHomeOverlay;
 
 // Initialize canvas
 resizeCanvas();
@@ -30,4 +32,7 @@ initDropdowns();
 
 // Initialize event handlers
 initEventHandlers();
+
+// Initialize home overlay (shows on first visit)
+initHomeOverlay();
 

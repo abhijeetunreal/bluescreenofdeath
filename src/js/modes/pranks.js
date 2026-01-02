@@ -37,21 +37,31 @@ export function renderPrankMode(mode, ctx, canvas) {
             drawBrokenScreen(ctx, canvas, state.getCrackLines());
             break;
         case 'white_noise':
-            // More realistic TV static
-            const id = ctx.createImageData(canvas.width, canvas.height);
-            for (let i = 0; i < id.data.length; i += 4) {
+            // More realistic TV static - reuse ImageData buffer for performance
+            let noiseData = state.getWhiteNoiseImageData();
+            const canvasSize = state.getWhiteNoiseCanvasSize();
+            
+            // Recreate ImageData only if canvas size changed
+            if (!noiseData || canvasSize.width !== canvas.width || canvasSize.height !== canvas.height) {
+                noiseData = ctx.createImageData(canvas.width, canvas.height);
+                state.setWhiteNoiseImageData(noiseData);
+                state.setWhiteNoiseCanvasSize({ width: canvas.width, height: canvas.height });
+            }
+            
+            // Update pixel data in existing buffer
+            for (let i = 0; i < noiseData.data.length; i += 4) {
                 // More varied noise with slight color variation
                 const base = Math.random() * 255;
                 const variation = (Math.random() - 0.5) * 30;
                 const r = Math.max(0, Math.min(255, base + variation));
                 const g = Math.max(0, Math.min(255, base + variation));
                 const b = Math.max(0, Math.min(255, base + variation));
-                id.data[i] = r;
-                id.data[i+1] = g;
-                id.data[i+2] = b;
-                id.data[i+3] = 255;
+                noiseData.data[i] = r;
+                noiseData.data[i+1] = g;
+                noiseData.data[i+2] = b;
+                noiseData.data[i+3] = 255;
             }
-            ctx.putImageData(id, 0, 0);
+            ctx.putImageData(noiseData, 0, 0);
             break;
         case 'radar':
             ctx.fillStyle = '#000';

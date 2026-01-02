@@ -1,6 +1,8 @@
 // Template loader utility - loads and parses HTML templates
 
 const templateCache = new Map();
+const MAX_CACHE_SIZE = 50; // Maximum number of templates to cache
+const accessOrder = []; // Track access order for LRU eviction
 
 /**
  * Loads and parses an HTML template for a given mode
@@ -8,8 +10,16 @@ const templateCache = new Map();
  * @returns {Promise<Object>} Parsed template object
  */
 export async function loadTemplate(modeName) {
+    if (!modeName) return null;
+    
     // Check cache first
     if (templateCache.has(modeName)) {
+        // Update access order (move to end)
+        const index = accessOrder.indexOf(modeName);
+        if (index > -1) {
+            accessOrder.splice(index, 1);
+        }
+        accessOrder.push(modeName);
         return templateCache.get(modeName);
     }
 
@@ -21,6 +31,8 @@ export async function loadTemplate(modeName) {
         templatePath = `src/templates/apple/${modeName}.html`;
     } else if (['broken_screen', 'white_noise', 'radar', 'hacker', 'no_signal'].includes(modeName)) {
         templatePath = `src/templates/pranks/${modeName}.html`;
+    } else if (modeName === 'tetris' || modeName === 'snake' || modeName === 'mario' || modeName === 'flap' || modeName === 'neon_vector' || modeName === 'neon_boids' || modeName === 'chess' || modeName === 'circular_maze' || modeName.startsWith('game_')) {
+        templatePath = `src/templates/games/${modeName}.html`;
     } else {
         templatePath = `src/templates/misc/${modeName}.html`;
     }
@@ -29,14 +41,52 @@ export async function loadTemplate(modeName) {
         const response = await fetch(templatePath);
         if (!response.ok) {
             // Template doesn't exist - return null (mode will use pure Canvas rendering)
+            // Don't log 404 errors as they're expected for modes without templates
+            if (response.status !== 404) {
+                console.warn(`Failed to load template for ${modeName}: HTTP ${response.status}`);
+            }
             return null;
         }
         const htmlString = await response.text();
+        
+        // Games templates are full HTML pages, return raw HTML
+        if (modeName === 'tetris' || modeName === 'snake' || modeName === 'mario' || modeName === 'flap' || modeName === 'neon_vector' || modeName === 'neon_boids' || modeName === 'chess' || modeName === 'circular_maze' || modeName.startsWith('game_')) {
+            const gameTemplate = { html: htmlString, type: 'game' };
+            
+            // Enforce cache size limit (LRU eviction)
+            if (templateCache.size >= MAX_CACHE_SIZE) {
+                // Remove least recently used entry
+                const lruKey = accessOrder.shift();
+                if (lruKey) {
+                    templateCache.delete(lruKey);
+                }
+            }
+            
+            templateCache.set(modeName, gameTemplate);
+            accessOrder.push(modeName);
+            return gameTemplate;
+        }
+        
+        // Other templates are parsed
         const parsed = parseTemplate(htmlString);
+        
+        // Enforce cache size limit (LRU eviction)
+        if (templateCache.size >= MAX_CACHE_SIZE) {
+            // Remove least recently used entry
+            const lruKey = accessOrder.shift();
+            if (lruKey) {
+                templateCache.delete(lruKey);
+            }
+        }
+        
         templateCache.set(modeName, parsed);
+        accessOrder.push(modeName);
         return parsed;
     } catch (error) {
-        console.warn(`Failed to load template for ${modeName}:`, error);
+        // Only log non-network errors (404s are expected and handled above)
+        if (error.name !== 'TypeError' || !error.message.includes('fetch')) {
+            console.warn(`Failed to load template for ${modeName}:`, error);
+        }
         return null;
     }
 }
@@ -105,5 +155,13 @@ export function parseTemplate(htmlString) {
  */
 export function clearTemplateCache() {
     templateCache.clear();
+    accessOrder.length = 0;
+}
+
+/**
+ * Gets the current cache size
+ */
+export function getCacheSize() {
+    return templateCache.size;
 }
 

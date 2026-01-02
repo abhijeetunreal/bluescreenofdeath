@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake Engine Simulation - Multi-Chrome</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+        }
+
+        #snake-canvas {
+            display: block;
+            background: transparent;
+        }
+
+        #menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .start-btn {
+            background: transparent;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 20px 50px;
+            font-size: 12px;
+            letter-spacing: 12px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            outline: none;
+        }
+
+        .start-btn:hover {
+            border-color: #fff;
+            letter-spacing: 20px;
+            background: #fff;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="snake-canvas"></canvas>
+        <div id="menu">
+            <button id="start-btn" class="start-btn">Start Snake Engine</button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('snake-canvas');
+            const ctx = canvas.getContext('2d');
+            const menu = document.getElementById('menu');
+            const startBtn = document.getElementById('start-btn');
+            
+            let gridW, gridH;
+            let BLOCK_SIZE = 30;
+            
+            let snake = [];
+            let food = {x: 0, y: 0};
+            let direction = {x: 1, y: 0};
+            let nextDirection = {x: 1, y: 0};
+            let gameOver = true;
+            let lastTime = 0;
+            let moveCounter = 0;
+            let moveInterval = 50; // High speed
+
+            const COLORS = [
+                '#00f0f0', '#0000f0', '#f0a000', '#f0f000', 
+                '#00f000', '#a000f0', '#f00000', '#ff00ff', 
+                '#00ff99', '#ff6600', '#33ccff', '#ffcc00'
+            ];
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                gridW = Math.floor(canvas.width / BLOCK_SIZE);
+                gridH = Math.floor(canvas.height / BLOCK_SIZE);
+            }
+
+            window.addEventListener('resize', resize);
+
+            function spawnFood() {
+                food = {
+                    x: Math.floor(Math.random() * gridW),
+                    y: Math.floor(Math.random() * gridH),
+                    color: COLORS[Math.floor(Math.random() * COLORS.length)]
+                };
+                // Ensure food doesn't spawn on snake
+                for (let part of snake) {
+                    if (part.x === food.x && part.y === food.y) {
+                        spawnFood();
+                        break;
+                    }
+                }
+            }
+
+            function draw() {
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Subtle Grid
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+                ctx.lineWidth = 1;
+                for(let i=0; i<=gridW; i++) {
+                    ctx.beginPath(); ctx.moveTo(i*BLOCK_SIZE, 0); ctx.lineTo(i*BLOCK_SIZE, canvas.height); ctx.stroke();
+                }
+                for(let i=0; i<=gridH; i++) {
+                    ctx.beginPath(); ctx.moveTo(0, i*BLOCK_SIZE); ctx.lineTo(canvas.width, i*BLOCK_SIZE); ctx.stroke();
+                }
+
+                // Draw Food
+                ctx.fillStyle = food.color;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = food.color;
+                ctx.fillRect(food.x * BLOCK_SIZE + 2, food.y * BLOCK_SIZE + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4);
+                ctx.shadowBlur = 0;
+
+                // Draw Snake
+                snake.forEach((part, index) => {
+                    ctx.fillStyle = part.color;
+                    ctx.fillRect(part.x * BLOCK_SIZE + 1, part.y * BLOCK_SIZE + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2);
+                    
+                    // Add a "gloss" effect to head
+                    if (index === 0) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                        ctx.fillRect(part.x * BLOCK_SIZE + 5, part.y * BLOCK_SIZE + 5, 5, 5);
+                    }
+                });
+            }
+
+            // AI Logic: Simple BFS to find food
+            function getAIDirection() {
+                const head = snake[0];
+                const queue = [[head.x, head.y, []]];
+                const visited = new Set();
+                visited.add(`${head.x},${head.y}`);
+
+                // Body parts to avoid
+                const bodySet = new Set(snake.map(p => `${p.x},${p.y}`));
+
+                while (queue.length > 0) {
+                    const [x, y, path] = queue.shift();
+
+                    if (x === food.x && y === food.y) {
+                        if (path.length > 0) return path[0];
+                    }
+
+                    const neighbors = [
+                        {x: 0, y: -1}, {x: 0, y: 1}, {x: -1, y: 0}, {x: 1, y: 0}
+                    ];
+
+                    for (let n of neighbors) {
+                        const nx = x + n.x;
+                        const ny = y + n.y;
+                        const key = `${nx},${ny}`;
+
+                        if (nx >= 0 && nx < gridW && ny >= 0 && ny < gridH && !bodySet.has(key) && !visited.has(key)) {
+                            visited.add(key);
+                            queue.push([nx, ny, [...path, n]]);
+                        }
+                    }
+                }
+
+                // If no path to food, just try to move to a safe neighbor
+                const fallbackNeighbors = [
+                    {x: 0, y: -1}, {x: 0, y: 1}, {x: -1, y: 0}, {x: 1, y: 0}
+                ];
+                for (let n of fallbackNeighbors) {
+                    const nx = head.x + n.x;
+                    const ny = head.y + n.y;
+                    if (nx >= 0 && nx < gridW && ny >= 0 && ny < gridH && !bodySet.has(`${nx},${ny}`)) {
+                        return n;
+                    }
+                }
+                
+                return direction; // Suicide if no options
+            }
+
+            function update(time = 0) {
+                if (gameOver) return;
+                const deltaTime = time - lastTime;
+                lastTime = time;
+                moveCounter += deltaTime;
+
+                if (moveCounter > moveInterval) {
+                    // AI calculates next move
+                    direction = getAIDirection();
+
+                    const newHead = {
+                        x: snake[0].x + direction.x,
+                        y: snake[0].y + direction.y,
+                        color: food.color // Inherit color from what it's hunting
+                    };
+
+                    // Check collisions
+                    if (newHead.x < 0 || newHead.x >= gridW || newHead.y < 0 || newHead.y >= gridH || 
+                        snake.some(p => p.x === newHead.x && p.y === newHead.y)) {
+                        init(); // Auto-restart on death
+                        return;
+                    }
+
+                    snake.unshift(newHead);
+
+                    if (newHead.x === food.x && newHead.y === food.y) {
+                        spawnFood();
+                    } else {
+                        snake.pop();
+                    }
+                    moveCounter = 0;
+                }
+
+                draw();
+                requestAnimationFrame(update);
+            }
+
+            function init() {
+                resize();
+                const startX = Math.floor(gridW / 2);
+                const startY = Math.floor(gridH / 2);
+                snake = [
+                    {x: startX, y: startY, color: COLORS[0]},
+                    {x: startX - 1, y: startY, color: COLORS[0]},
+                    {x: startX - 2, y: startY, color: COLORS[0]}
+                ];
+                spawnFood();
+                gameOver = false;
+                lastTime = performance.now();
+                update();
+            }
+
+            startBtn.addEventListener('click', () => {
+                menu.style.display = 'none';
+                init();
+            });
+
+            resize();
+        })();
+    </script>
+</body>
+</html>
+

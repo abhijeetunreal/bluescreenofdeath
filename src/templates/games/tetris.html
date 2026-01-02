@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tetris Horizon Engine - Multi-Chrome</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
+
+        #tetris-canvas {
+            display: block;
+            background: transparent;
+        }
+
+        #menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .start-btn {
+            background: transparent;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 20px 50px;
+            font-size: 12px;
+            letter-spacing: 12px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: 'Segoe UI', sans-serif;
+            outline: none;
+        }
+
+        .start-btn:hover {
+            border-color: #fff;
+            letter-spacing: 20px;
+            background: #fff;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="tetris-canvas"></canvas>
+        <div id="menu">
+            <button id="start-btn" class="start-btn">Launch Multi-Chrome</button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('tetris-canvas');
+            const ctx = canvas.getContext('2d');
+            const menu = document.getElementById('menu');
+            const startBtn = document.getElementById('start-btn');
+            
+            let COLS;
+            const ROWS = 22; 
+            let BLOCK_SIZE;
+            
+            let board = [];
+            let p = null;
+            let gameOver = true;
+            let lastTime = 0;
+            let dropCounter = 0;
+            let dropInterval = 30; // Slightly faster for visual flair
+
+            // Expanded and vibrant color palette
+            const COLORS = [
+                null,
+                '#00f0f0', // Cyan
+                '#0000f0', // Blue
+                '#f0a000', // Orange
+                '#f0f000', // Yellow
+                '#00f000', // Green
+                '#a000f0', // Purple
+                '#f00000', // Red
+                '#ff00ff', // Magenta
+                '#00ff99', // Spring Green
+                '#ff6600', // Bright Orange
+                '#33ccff', // Sky Blue
+                '#ffcc00', // Amber
+                '#ff0066', // Rose
+                '#99ff00'  // Lime
+            ];
+
+            function resize() {
+                BLOCK_SIZE = Math.floor(window.innerHeight / ROWS);
+                COLS = Math.ceil(window.innerWidth / BLOCK_SIZE);
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                if (!gameOver) {
+                    board = createBoard();
+                    playerReset();
+                }
+            }
+
+            window.addEventListener('resize', resize);
+
+            const SHAPES = [
+                null,
+                [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+                [[1,0,0],[1,1,1],[0,0,0]],
+                [[0,0,1],[1,1,1],[0,0,0]],
+                [[1,1],[1,1]],
+                [[0,1,1],[1,1,0],[0,0,0]],
+                [[0,1,0],[1,1,1],[0,0,0]],
+                [[1,1,0],[0,1,1],[0,0,0]]
+            ];
+
+            function createBoard() {
+                return Array.from({length: ROWS}, () => Array(COLS).fill(0));
+            }
+
+            function draw() {
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Horizon Grid
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                ctx.lineWidth = 1;
+                for(let i=0; i<=COLS; i++) {
+                    ctx.beginPath(); ctx.moveTo(i*BLOCK_SIZE, 0); ctx.lineTo(i*BLOCK_SIZE, canvas.height); ctx.stroke();
+                }
+                for(let i=0; i<=ROWS; i++) {
+                    ctx.beginPath(); ctx.moveTo(0, i*BLOCK_SIZE); ctx.lineTo(canvas.width, i*BLOCK_SIZE); ctx.stroke();
+                }
+
+                board.forEach((row, y) => {
+                    row.forEach((value, x) => {
+                        if (value !== 0) drawBlock(x, y, value);
+                    });
+                });
+                
+                if (p) {
+                    p.matrix.forEach((row, y) => {
+                        row.forEach((value, x) => {
+                            if (value !== 0) drawBlock(x + p.pos.x, y + p.pos.y, p.colorOverride || value);
+                        });
+                    });
+                }
+            }
+
+            function drawBlock(x, y, colorIndex) {
+                // Get base color
+                let color = COLORS[colorIndex] || '#ffffff';
+                
+                ctx.fillStyle = color;
+                ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                
+                // Subtle lighting effect for depth
+                ctx.fillStyle = 'rgba(255,255,255,0.15)';
+                ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE / 4);
+                
+                ctx.fillStyle = 'rgba(0,0,0,0.15)';
+                ctx.fillRect(x * BLOCK_SIZE, (y + 0.75) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE / 4);
+
+                // Grid Divider
+                ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            }
+
+            function rotate(matrix) {
+                return matrix[0].map((_, i) => matrix.map(row => row[i]).reverse());
+            }
+
+            function collide(board, player) {
+                const [m, o] = [player.matrix, player.pos];
+                for (let y = 0; y < m.length; ++y) {
+                    for (let x = 0; x < m[y].length; ++x) {
+                        if (m[y][x] !== 0) {
+                            if (!board[y + o.y] || board[y + o.y][x + o.x] === undefined || board[y + o.y][x + o.x] !== 0) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+
+            // AI Logic
+            function evaluateBoard(tempBoard) {
+                let holes = 0;
+                let aggregateHeight = 0;
+                let bumpiness = 0;
+                let columnHeights = new Array(COLS).fill(0);
+
+                for (let x = 0; x < COLS; x++) {
+                    let foundBlock = false;
+                    for (let y = 0; y < ROWS; y++) {
+                        if (tempBoard[y][x] !== 0) {
+                            if (!foundBlock) {
+                                columnHeights[x] = ROWS - y;
+                                foundBlock = true;
+                            }
+                        } else if (foundBlock) {
+                            holes++;
+                        }
+                    }
+                }
+
+                aggregateHeight = columnHeights.reduce((a, b) => a + b, 0);
+                for (let x = 0; x < COLS - 1; x++) {
+                    bumpiness += Math.abs(columnHeights[x] - columnHeights[x+1]);
+                }
+
+                return (-0.51 * aggregateHeight) + (-0.35 * bumpiness) + (-0.95 * holes);
+            }
+
+            function getBestMove() {
+                let bestScore = -Infinity;
+                let bestMove = { x: 0, rotation: 0 };
+                let currentMatrix = p.matrix;
+
+                for (let r = 0; r < 4; r++) {
+                    for (let x = -2; x < COLS; x++) {
+                        let tempP = { pos: { x: x, y: 0 }, matrix: currentMatrix };
+                        if (collide(board, tempP)) continue;
+
+                        while (!collide(board, tempP)) { tempP.pos.y++; }
+                        tempP.pos.y--;
+
+                        let tempBoard = board.map(row => [...row]);
+                        tempP.matrix.forEach((row, py) => {
+                            row.forEach((val, px) => {
+                                if (val !== 0) {
+                                    if (tempBoard[py + tempP.pos.y]) {
+                                        tempBoard[py + tempP.pos.y][px + tempP.pos.x] = val;
+                                    }
+                                }
+                            });
+                        });
+
+                        let score = evaluateBoard(tempBoard);
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMove = { x: x, rotation: r };
+                        }
+                    }
+                    currentMatrix = rotate(currentMatrix);
+                }
+                return bestMove;
+            }
+
+            function playerReset() {
+                const shapeId = Math.floor(Math.random() * (SHAPES.length - 1)) + 1;
+                // Assign a random color from the expanded palette for each new piece
+                const colorId = Math.floor(Math.random() * (COLORS.length - 1)) + 1;
+                
+                p = {
+                    pos: {x: Math.floor(COLS / 2) - 1, y: 0},
+                    matrix: SHAPES[shapeId],
+                    colorOverride: colorId 
+                };
+                
+                if (collide(board, p)) {
+                    board = createBoard(); 
+                }
+
+                let decision = getBestMove();
+                for(let i=0; i<decision.rotation; i++) p.matrix = rotate(p.matrix);
+                p.pos.x = decision.x;
+            }
+
+            function update(time = 0) {
+                if (gameOver) return;
+                const deltaTime = time - lastTime;
+                lastTime = time;
+                dropCounter += deltaTime;
+
+                if (dropCounter > dropInterval) {
+                    p.pos.y++;
+                    if (collide(board, p)) {
+                        p.pos.y--;
+                        p.matrix.forEach((row, y) => {
+                            row.forEach((value, x) => {
+                                if (value !== 0 && board[y + p.pos.y]) {
+                                    // Store the piece's specific color on the board
+                                    board[y + p.pos.y][x + p.pos.x] = p.colorOverride;
+                                }
+                            });
+                        });
+                        arenaSweep();
+                        playerReset();
+                    }
+                    dropCounter = 0;
+                }
+                draw();
+                requestAnimationFrame(update);
+            }
+
+            function arenaSweep() {
+                outer: for (let y = ROWS - 1; y > 0; --y) {
+                    for (let x = 0; x < COLS; ++x) { if (board[y][x] === 0) continue outer; }
+                    board.splice(y, 1);
+                    board.unshift(new Array(COLS).fill(0));
+                    ++y;
+                }
+            }
+
+            startBtn.addEventListener('click', () => {
+                resize();
+                board = createBoard();
+                gameOver = false;
+                playerReset();
+                menu.style.display = 'none';
+                update();
+            });
+
+            resize();
+        })();
+    </script>
+</body>
+</html>
+
