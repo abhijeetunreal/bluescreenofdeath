@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Neon Ecosystem – Fixed</title>
+  <style>
+    body { margin: 0; background:#010409; overflow:hidden; }
+    canvas { display:block; }
+  </style>
+</head>
+<body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    /* ===================== CONFIG ===================== */
+    const BOID_COUNT = 70;
+    const SCAVENGER_COUNT = 30;
+    const MAX_FOOD = 40;
+    const BOUNDS = 240;
+    const MUTATION_RATE = 0.2;
+
+    let scene, camera, renderer, clock;
+    let boids = [], scavengers = [], foodItems = [];
+    let predator, guardian;
+
+    let isDragging = false;
+    let rotation = { x: 0.45, y: 0.45 };
+    let targetRotation = { x: 0.45, y: 0.45 };
+    let zoom = 500;
+
+    /* ===================== BASE ===================== */
+    class BaseEntity {
+      constructor() {
+        this.position = new THREE.Vector3();
+        this.velocity = new THREE.Vector3();
+        this.acceleration = new THREE.Vector3();
+      }
+      boundsCheck() {
+        const l = BOUNDS / 2;
+        if (this.position.x > l || this.position.x < -l) this.velocity.x *= -1;
+        if (this.position.y > l || this.position.y < -l) this.velocity.y *= -1;
+        if (this.position.z > l || this.position.z < -l) this.velocity.z *= -1;
+        this.position.clamp(
+          new THREE.Vector3(-l, -l, -l),
+          new THREE.Vector3(l, l, l)
+        );
+      }
+    }
+
+    /* ===================== BOID ===================== */
+    class Boid extends BaseEntity {
+      constructor(genes, position, energy = 100) {
+        super();
+        this.energy = energy;
+        this.dna = genes || {
+          sep: 1.5 + Math.random(),
+          ali: 1.0 + Math.random(),
+          coh: 1.0 + Math.random(),
+          speed: 1.0 + Math.random(),
+          perception: 50 + Math.random() * 30,
+          size: 2 + Math.random() * 3
+        };
+
+        const lim = BOUNDS / 2 - 20;
+        this.position.copy(position || new THREE.Vector3(
+          (Math.random() - 0.5) * lim * 2,
+          (Math.random() - 0.5) * lim * 2,
+          (Math.random() - 0.5) * lim * 2
+        ));
+
+        this.velocity.set(
+          Math.random() - 0.5,
+          Math.random() - 0.5,
+          Math.random() - 0.5
+        ).normalize().multiplyScalar(this.dna.speed);
+
+        const geo = new THREE.ConeGeometry(this.dna.size, this.dna.size * 3, 4);
+        geo.rotateX(Math.PI / 2);
+        this.material = new THREE.MeshPhongMaterial({
+          color: 0x3b82f6,
+          emissive: 0x1e40af,
+          flatShading: true
+        });
+        this.mesh = new THREE.Mesh(geo, this.material);
+        scene.add(this.mesh);
+      }
+
+      flock(others, hunter, protector, food) {
+        const sep = new THREE.Vector3();
+        const ali = new THREE.Vector3();
+        const coh = new THREE.Vector3();
+        let count = 0;
+
+        for (const o of others) {
+          if (o === this) continue;
+          const d = this.position.distanceTo(o.position);
+          if (d > 0 && d < this.dna.perception) {
+            sep.add(this.position.clone().sub(o.position).divideScalar(d));
+            ali.add(o.velocity);
+            coh.add(o.position);
+            count++;
+          }
+        }
+
+        if (count > 0) {
+          sep.normalize().multiplyScalar(this.dna.sep);
+          ali.divideScalar(count).normalize().multiplyScalar(this.dna.ali);
+          coh.divideScalar(count).sub(this.position).normalize().multiplyScalar(this.dna.coh);
+          this.acceleration.add(sep).add(ali).add(coh);
+        }
+
+        if (hunter && this.position.distanceTo(hunter.position) < 80) {
+          this.acceleration.add(
+            this.position.clone().sub(hunter.position).normalize().multiplyScalar(3)
+          );
+        }
+
+        if (protector && this.position.distanceTo(protector.position) < 100) {
+          this.acceleration.add(
+            protector.position.clone().sub(this.position).normalize().multiplyScalar(0.4)
+          );
+        }
+
+        if (this.energy < 90 && food.length) {
+          let closest = null, min = Infinity;
+          for (const f of food) {
+            const d = this.position.distanceTo(f.position);
+            if (d < min) { min = d; closest = f; }
+          }
+          if (closest) {
+            this.acceleration.add(
+              closest.position.clone().sub(this.position).normalize().multiplyScalar(1.5)
+            );
+            if (min < 10) { this.energy += 60; removeFood(closest); }
+          }
+        }
+      }
+
+      update() {
+        this.energy -= 0.08;
+        this.velocity.add(this.acceleration).clampLength(0, this.dna.speed * 2.5);
+        this.position.add(this.velocity);
+        this.acceleration.set(0, 0, 0);
+
+        this.boundsCheck();
+        this.mesh.position.copy(this.position);
+        this.mesh.lookAt(this.position.clone().add(this.velocity));
+
+        const e = Math.min(1, this.energy / 150);
+        this.material.emissive.setRGB(0.1 * e, 0.4 * e, e);
+
+        if (this.energy > 200) this.reproduce();
+      }
+
+      reproduce() {
+        this.energy *= 0.5;
+        const dna = { ...this.dna };
+        for (const k in dna) if (Math.random() < MUTATION_RATE) dna[k] *= 0.8 + Math.random() * 0.4;
+        boids.push(new Boid(dna, this.position.clone(), this.energy));
+      }
+
+      die() { scene.remove(this.mesh); }
+    }
+
+    /* ===================== SCAVENGER ===================== */
+    class Scavenger extends BaseEntity {
+      constructor() {
+        super();
+        const lim = BOUNDS / 2 - 10;
+        this.position.set((Math.random()-0.5)*lim*2, (Math.random()-0.5)*lim*2, (Math.random()-0.5)*lim*2);
+        this.velocity.set(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).normalize().multiplyScalar(3);
+        this.mesh = new THREE.Mesh(
+          new THREE.SphereGeometry(1.5, 6, 6),
+          new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+        );
+        scene.add(this.mesh);
+      }
+      update() {
+        this.velocity.add(new THREE.Vector3(
+          (Math.random()-0.5)*0.3,
+          (Math.random()-0.5)*0.3,
+          (Math.random()-0.5)*0.3
+        )).clampLength(2, 5);
+        this.position.add(this.velocity);
+        this.boundsCheck();
+        this.mesh.position.copy(this.position);
+      }
+    }
+
+    /* ===================== PREDATOR ===================== */
+    class Predator extends BaseEntity {
+      constructor() {
+        super();
+        this.position.set(-60, 0, 0);
+        this.mesh = new THREE.Mesh(
+          new THREE.ConeGeometry(12, 35, 6),
+          new THREE.MeshPhongMaterial({ color: 0xef4444, emissive: 0x7f1d1d })
+        );
+        this.mesh.rotateX(Math.PI / 2);
+        scene.add(this.mesh);
+      }
+      update(targets, threat) {
+        let closest = null, min = Infinity;
+        for (const t of targets) {
+          const d = this.position.distanceTo(t.position);
+          if (d < min) { min = d; closest = t; }
+        }
+        if (closest) {
+          this.velocity.add(
+            closest.position.clone().sub(this.position).normalize().multiplyScalar(1.4)
+          ).clampLength(0, 2.2);
+          if (min < 14 && closest.die) {
+            closest.die();
+            targets.splice(targets.indexOf(closest), 1);
+          }
+        }
+        if (threat && this.position.distanceTo(threat.position) < 100) {
+          this.velocity.add(
+            this.position.clone().sub(threat.position).normalize().multiplyScalar(2.5)
+          );
+        }
+        this.position.add(this.velocity);
+        this.boundsCheck();
+        this.mesh.position.copy(this.position);
+        this.mesh.lookAt(this.position.clone().add(this.velocity));
+      }
+    }
+
+    /* ===================== GUARDIAN ===================== */
+    class Guardian extends BaseEntity {
+      constructor() {
+        super();
+        this.position.set(60, 0, 0);
+        this.mesh = new THREE.Mesh(
+          new THREE.IcosahedronGeometry(18, 1),
+          new THREE.MeshPhongMaterial({ color: 0x22d3ee, emissive: 0x083344, wireframe: true })
+        );
+        scene.add(this.mesh);
+      }
+      update(target) {
+        this.velocity.add(
+          target.position.clone().sub(this.position).normalize()
+        ).clampLength(0, 1.8);
+        this.position.add(this.velocity);
+        this.boundsCheck();
+        this.mesh.position.copy(this.position);
+        this.mesh.rotation.x += 0.02;
+        this.mesh.rotation.y += 0.04;
+      }
+    }
+
+    /* ===================== CORE ===================== */
+    function init() {
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x010409);
+
+      camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 3000);
+      camera.position.z = zoom;
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      document.body.appendChild(renderer.domElement);
+
+      const box = new THREE.BoxGeometry(BOUNDS, BOUNDS, BOUNDS);
+      scene.add(new THREE.LineSegments(
+        new THREE.EdgesGeometry(box),
+        new THREE.LineBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.5 })
+      ));
+
+      scene.add(new THREE.AmbientLight(0xffffff, 1.3));
+      const light = new THREE.PointLight(0xffffff, 1);
+      light.position.set(200, 200, 200);
+      scene.add(light);
+
+      predator = new Predator();
+      guardian = new Guardian();
+      for (let i = 0; i < BOID_COUNT; i++) boids.push(new Boid());
+      for (let i = 0; i < SCAVENGER_COUNT; i++) scavengers.push(new Scavenger());
+
+      clock = new THREE.Clock();
+
+      document.addEventListener('mousedown', () => isDragging = true);
+      document.addEventListener('mouseup', () => isDragging = false);
+      document.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        targetRotation.y += e.movementX * 0.007;
+        targetRotation.x += e.movementY * 0.007;
+      });
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      animate();
+    }
+
+    function spawnFood() {
+      if (foodItems.length >= MAX_FOOD || Math.random() > 0.15) return;
+      const mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(2, 6, 6),
+        new THREE.MeshBasicMaterial({ color: 0x4ade80 })
+      );
+      const l = BOUNDS / 2 - 10;
+      mesh.position.set((Math.random()-0.5)*l*2, (Math.random()-0.5)*l*2, (Math.random()-0.5)*l*2);
+      scene.add(mesh);
+      foodItems.push({ mesh, position: mesh.position });
+    }
+
+    function removeFood(f) {
+      const i = foodItems.indexOf(f);
+      if (i >= 0) { scene.remove(f.mesh); foodItems.splice(i, 1); }
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      spawnFood();
+      predator.update([...boids, ...scavengers], guardian);
+      guardian.update(predator);
+
+      scavengers.forEach(s => s.update());
+
+      for (let i = boids.length - 1; i >= 0; i--) {
+        const b = boids[i];
+        if (b.energy <= 0) { b.die(); boids.splice(i, 1); continue; }
+        b.flock(boids, predator, guardian, foodItems);
+        b.update();
+      }
+
+      rotation.x += (targetRotation.x - rotation.x) * 0.1;
+      rotation.y += (targetRotation.y - rotation.y) * 0.1;
+      rotation.x = Math.max(-Math.PI/2.1, Math.min(Math.PI/2.1, rotation.x));
+
+      camera.position.set(
+        zoom * Math.sin(rotation.y) * Math.cos(rotation.x),
+        zoom * Math.sin(rotation.x),
+        zoom * Math.cos(rotation.y) * Math.cos(rotation.x)
+      );
+      camera.lookAt(0, 0, 0);
+
+      renderer.render(scene, camera);
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
+

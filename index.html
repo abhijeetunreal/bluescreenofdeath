@@ -86,10 +86,12 @@
                 <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('chess', null, this)">Chess Pro - AI & Multiplayer Edition</button>
                 <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('circular_maze', null, this)">Infinite Circular Maze - Neural Engine</button>
                 <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('maze', null, this)">Infinite Maze - High Performance Engine</button>
+                <button class="text-[#ccc] px-[18px] py-3 block w-full border-0 bg-transparent text-left text-xs cursor-pointer transition-all duration-200 min-h-11 touch-manipulation hover:bg-white/10 hover:text-white hover:pl-6 active:text-white active:font-bold active:bg-white/15 sm:text-[0.8rem] sm:px-5 sm:py-3.5 max-[480px]:text-sm max-[480px]:px-5 max-[480px]:py-3.5 max-[480px]:min-h-12 lg:text-[0.8125rem] lg:px-[22px]" onclick="setMode('neon_ecosystem', null, this)">3D Neon Ecosystem - Fixed</button>
             </div>
         </div>
         
         <div class="divider w-px h-6 bg-white/20 mx-1.5 max-[480px]:h-5 max-[480px]:mx-1"></div>
+        <button id="homeBtn" class="bg-white/8 text-text border border-white/10 px-3.5 py-1.5 rounded-[20px] cursor-pointer text-[0.625rem] font-semibold uppercase tracking-[0.5px] min-h-11 min-w-11 touch-manipulation hover:bg-white/18 transition-all duration-200 max-[480px]:px-3 max-[480px]:py-2 max-[480px]:text-[0.5625rem] max-[480px]:min-h-11 max-[480px]:min-w-[50px]" onclick="showHomeOverlay()" aria-label="Show home page">Home</button>
         <button id="fsBtn" class="bg-white text-black border-0 px-4 py-1.75 rounded-[20px] cursor-pointer text-[0.625rem] font-extrabold uppercase min-h-11 min-w-11 touch-manipulation max-[480px]:px-3.5 max-[480px]:py-2 max-[480px]:text-[0.5625rem] max-[480px]:min-h-11 max-[480px]:min-w-[50px]" onclick="toggleFullscreen()" aria-label="Toggle fullscreen mode">FS</button>
     </div>
 
@@ -171,10 +173,12 @@
                         <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('chess', null, this); closeMobileMenu();">Chess Pro - AI & Multiplayer Edition</button>
                         <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('circular_maze', null, this); closeMobileMenu();">Infinite Circular Maze - Neural Engine</button>
                         <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('maze', null, this); closeMobileMenu();">Infinite Maze - High Performance Engine</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl bg-white/8 border border-white/10 text-text text-sm font-medium active:bg-white/12" onclick="setMode('neon_ecosystem', null, this); closeMobileMenu();">3D Neon Ecosystem - Fixed</button>
                     </div>
                 </div>
 
                 <div class="flex gap-2 mt-4 mb-2">
+                    <button class="flex-1 py-3 rounded-xl bg-white/10 border border-white/20 text-text font-semibold text-sm active:bg-white/15" onclick="showHomeOverlay(); closeMobileMenu();">Home</button>
                     <button class="flex-1 py-3 rounded-xl bg-white text-black font-semibold text-sm active:opacity-90" onclick="toggleFullscreen(); closeMobileMenu();">Fullscreen</button>
                     <button class="flex-1 py-3 rounded-xl bg-white/10 border border-white/20 text-text font-semibold text-sm active:bg-white/15" onclick="setMode('color', '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')); closeMobileMenu();">Random</button>
                 </div>
@@ -184,6 +188,130 @@
 
     <!-- Mobile Menu Overlay -->
     <div id="mobileMenuOverlay" class="mobile-menu-overlay fixed top-0 left-0 w-full h-full bg-black/70 backdrop-blur-sm z-[1998] opacity-0 transition-opacity duration-300 ease-in-out" onclick="toggleMobileMenu()"></div>
+
+    <!-- Home Overlay -->
+    <div id="homeOverlay" class="home-overlay fixed inset-0 z-[3000] bg-black/80 backdrop-blur-md opacity-0 invisible transition-all duration-500 ease-in-out overflow-y-auto">
+        <div class="min-h-full flex items-center justify-center p-4 sm:p-6 lg:p-8">
+            <div class="home-overlay-content w-full max-w-4xl bg-bgUi backdrop-blur-[25px] border border-borderUi rounded-3xl shadow-2xl p-6 sm:p-8 lg:p-10 my-8 transform scale-95 transition-transform duration-500">
+                <!-- Close Button -->
+                <button id="homeOverlayClose" class="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 flex items-center justify-center text-text/60 hover:text-text bg-white/5 hover:bg-white/10 rounded-full transition-all duration-200" aria-label="Close">
+                    <span class="text-2xl leading-none">×</span>
+                </button>
+
+                <!-- Hero Section -->
+                <div class="text-center mb-8 sm:mb-10">
+                    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4">The Ultimate Screen Tool</h1>
+                    <p class="text-text/80 text-base sm:text-lg max-w-2xl mx-auto">Transform your screen with realistic BSOD screens, system simulations, games, pranks, and more. Perfect for presentations, pranks, or just having fun!</p>
+                </div>
+
+                <!-- Quick Start Section -->
+                <div class="mb-8 sm:mb-10">
+                    <h2 class="text-xl sm:text-2xl font-semibold text-white mb-4 sm:mb-5 flex items-center gap-2">
+                        <span class="text-2xl">🚀</span>
+                        Quick Start
+                    </h2>
+                    <div class="space-y-3 sm:space-y-4">
+                        <div class="flex items-start gap-3 sm:gap-4 bg-white/5 rounded-xl p-4 border border-white/10">
+                            <span class="text-xl sm:text-2xl flex-shrink-0">1️⃣</span>
+                            <div>
+                                <h3 class="text-white font-medium mb-1">Select a Mode</h3>
+                                <p class="text-text/70 text-sm sm:text-base">Use the menu buttons at the top (Windows, Apple, Games, Pranks, More) to choose from dozens of screen effects and simulations.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 sm:gap-4 bg-white/5 rounded-xl p-4 border border-white/10">
+                            <span class="text-xl sm:text-2xl flex-shrink-0">2️⃣</span>
+                            <div>
+                                <h3 class="text-white font-medium mb-1">Go Fullscreen</h3>
+                                <p class="text-text/70 text-sm sm:text-base">Click the "FS" button or use the mobile menu to enter fullscreen mode for the best experience.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 sm:gap-4 bg-white/5 rounded-xl p-4 border border-white/10">
+                            <span class="text-xl sm:text-2xl flex-shrink-0">3️⃣</span>
+                            <div>
+                                <h3 class="text-white font-medium mb-1">Customize Colors</h3>
+                                <p class="text-text/70 text-sm sm:text-base">Use the color swatches (Black, White, Custom) to set a solid color background anytime.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features Overview -->
+                <div class="mb-8 sm:mb-10">
+                    <h2 class="text-xl sm:text-2xl font-semibold text-white mb-4 sm:mb-5 flex items-center gap-2">
+                        <span class="text-2xl">✨</span>
+                        Features
+                    </h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <h3 class="text-white font-medium mb-2 flex items-center gap-2">
+                                <span>🪟</span>
+                                Windows
+                            </h3>
+                            <p class="text-text/70 text-sm">BSOD screens, boot sequences, BIOS screens, and loading animations from Windows XP to Windows 11.</p>
+                        </div>
+                        <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <h3 class="text-white font-medium mb-2 flex items-center gap-2">
+                                <span>🍎</span>
+                                Apple
+                            </h3>
+                            <p class="text-text/70 text-sm">macOS boot screens, kernel panics, iOS updates, and iPhone disabled screens.</p>
+                        </div>
+                        <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <h3 class="text-white font-medium mb-2 flex items-center gap-2">
+                                <span>🎮</span>
+                                Games
+                            </h3>
+                            <p class="text-text/70 text-sm">Play classic games like Tetris, Snake, Pac-Man, Mario, Chess, and more right in your browser.</p>
+                        </div>
+                        <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <h3 class="text-white font-medium mb-2 flex items-center gap-2">
+                                <span>😈</span>
+                                Pranks
+                            </h3>
+                            <p class="text-text/70 text-sm">Broken screen effects, white noise, radar screens, hacker typer, and "No Signal" displays.</p>
+                        </div>
+                        <div class="bg-white/5 rounded-xl p-4 border border-white/10 sm:col-span-2">
+                            <h3 class="text-white font-medium mb-2 flex items-center gap-2">
+                                <span>➕</span>
+                                More
+                            </h3>
+                            <p class="text-text/70 text-sm">Ubuntu, Chrome OS, Matrix Rain, DVD Bouncing, Flip Clock, and inspirational quotes.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tips Section -->
+                <div class="mb-8 sm:mb-10">
+                    <h2 class="text-xl sm:text-2xl font-semibold text-white mb-4 sm:mb-5 flex items-center gap-2">
+                        <span class="text-2xl">💡</span>
+                        Tips & Tricks
+                    </h2>
+                    <div class="space-y-3 sm:space-y-4">
+                        <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <p class="text-text/80 text-sm sm:text-base"><strong class="text-white">UI Auto-Hide:</strong> The menu automatically hides after a few seconds of inactivity. Move your mouse to bring it back.</p>
+                        </div>
+                        <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <p class="text-text/80 text-sm sm:text-base"><strong class="text-white">Mobile Friendly:</strong> On mobile devices, tap the menu button (☰) in the top-right corner to access all features.</p>
+                        </div>
+                        <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <p class="text-text/80 text-sm sm:text-base"><strong class="text-white">Random Mode:</strong> Use the "Random" button in the mobile menu to discover new effects randomly.</p>
+                        </div>
+                        <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <p class="text-text/80 text-sm sm:text-base"><strong class="text-white">Games Controls:</strong> Most games support keyboard controls. Check individual game instructions for details.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get Started Button -->
+                <div class="text-center pt-4 sm:pt-6 border-t border-white/10">
+                    <button id="homeOverlayGetStarted" class="bg-white text-black border-0 px-8 sm:px-10 py-3 sm:py-4 rounded-[25px] cursor-pointer text-base sm:text-lg font-extrabold uppercase min-h-12 sm:min-h-14 touch-manipulation hover:bg-white/90 transition-all duration-200 shadow-lg hover:shadow-xl">
+                        Get Started
+                    </button>
+                    <p class="text-text/60 text-xs sm:text-sm mt-4">Click anywhere outside this window or press the close button to dismiss</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="src/js/main.js"></script>
 </body>

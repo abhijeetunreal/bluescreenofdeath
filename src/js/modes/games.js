@@ -63,6 +63,8 @@ export async function initGamesMode(mode, canvas) {
         await loadAndInjectMaze();
     } else if (mode === 'neon_boids') {
         await loadAndInjectNeonBoids();
+    } else if (mode === 'neon_ecosystem') {
+        await loadAndInjectNeonEcosystem();
     }
     
     // Show the game container
@@ -460,6 +462,45 @@ async function loadAndInjectMaze() {
 }
 
 /**
+ * Load and inject Neon Ecosystem game
+ */
+async function loadAndInjectNeonEcosystem() {
+    // Remove existing iframe if present
+    if (gameIframe) {
+        gameIframe.remove();
+        gameIframe = null;
+    }
+    
+    // Create iframe for the Neon Ecosystem game
+    gameIframe = document.createElement('iframe');
+    gameIframe.id = 'neon-ecosystem-iframe';
+    gameIframe.style.cssText = `
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: #000;
+    `;
+    gameIframe.sandbox = 'allow-scripts allow-same-origin allow-forms';
+    
+    // Load the template
+    try {
+        const template = await loadTemplate('neon_ecosystem');
+        if (template && template.html) {
+            // If template has HTML content, use it
+            gameIframe.srcdoc = template.html;
+        } else {
+            // Fallback: load from file directly
+            gameIframe.src = 'src/templates/games/neon_ecosystem.html';
+        }
+    } catch (error) {
+        console.warn('Failed to load Neon Ecosystem template, using direct path:', error);
+        gameIframe.src = 'src/templates/games/neon_ecosystem.html';
+    }
+    
+    gameContainer.appendChild(gameIframe);
+}
+
+/**
  * Render games mode (games handle their own rendering)
  * @param {string} mode - The game mode name
  * @param {CanvasRenderingContext2D} ctx - The canvas context (not used for games)
@@ -500,6 +541,6 @@ export function cleanupGame() {
  * @returns {boolean} True if the mode is a games mode
  */
 export function isGamesMode(mode) {
-    return mode === 'tetris' || mode === 'snake' || mode === 'pacman' || mode === 'mario' || mode === 'flap' || mode === 'neon_vector' || mode === 'neon_boids' || mode === 'chess' || mode === 'circular_maze' || mode === 'maze' || mode.startsWith('game_');
+    return mode === 'tetris' || mode === 'snake' || mode === 'pacman' || mode === 'mario' || mode === 'flap' || mode === 'neon_vector' || mode === 'neon_boids' || mode === 'neon_ecosystem' || mode === 'chess' || mode === 'circular_maze' || mode === 'maze' || mode.startsWith('game_');
 }
 
