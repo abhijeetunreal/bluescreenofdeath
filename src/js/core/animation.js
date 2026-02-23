@@ -2,6 +2,7 @@
 
 import * as state from './state.js';
 import { getCanvas, getCtx } from './canvas.js';
+import { getCategoryForMode } from '../config/mode-registry.js';
 import { renderColorMode } from '../modes/color.js';
 import { initWindowsMode, renderWindowsMode, cleanupWindowsMode } from '../modes/windows.js';
 import { initAppleMode, renderAppleMode, cleanupAppleMode } from '../modes/apple.js';
@@ -19,60 +20,46 @@ let initToken = 0;
 let currentInitMode = null;
 
 export async function initMode() {
-    // Increment token to mark this initialization
     initToken++;
     const token = initToken;
-    
+
     state.resetProgress();
     state.resetFrame();
-    
+
     const mode = state.getCurrentMode();
     const previousMode = currentInitMode;
     currentInitMode = mode;
-    
+    const category = getCategoryForMode(mode);
+    const prevCategory = previousMode ? getCategoryForMode(previousMode) : null;
+
     try {
-        // Clean up previous mode if switching away from it
-        if (previousMode && isGamesMode(previousMode) && !isGamesMode(mode)) {
-            cleanupGame();
-        } else if (previousMode && (previousMode === 'macos_drift' || previousMode.startsWith('macos_') || previousMode.startsWith('ios_')) && 
-                   !(mode === 'macos_drift' || mode.startsWith('macos_') || mode.startsWith('ios_'))) {
-            cleanupAppleMode();
-        } else if (previousMode && ['ubuntu', 'chromeos', 'matrix', 'dvd', 'flip_clock', 'quotes'].includes(previousMode) && 
-                   !['ubuntu', 'chromeos', 'matrix', 'dvd', 'flip_clock', 'quotes'].includes(mode)) {
-            cleanupMiscMode();
-        } else if (previousMode && ['broken_screen', 'white_noise', 'radar', 'hacker', 'no_signal'].includes(previousMode) && 
-                   !['broken_screen', 'white_noise', 'radar', 'hacker', 'no_signal'].includes(mode)) {
-            cleanupPrankMode();
-        } else if (previousMode && previousMode.startsWith('win_') && !mode.startsWith('win_')) {
-            cleanupWindowsMode();
+        if (previousMode && prevCategory !== category) {
+            if (prevCategory === 'games') cleanupGame();
+            else if (prevCategory === 'apple') cleanupAppleMode();
+            else if (prevCategory === 'misc') cleanupMiscMode();
+            else if (prevCategory === 'pranks') cleanupPrankMode();
+            else if (prevCategory === 'windows') cleanupWindowsMode();
         }
-        
-        if (isGamesMode(mode)) {
+
+        if (category === 'games') {
             await initGamesMode(mode, canvas);
-        } else if (mode === 'macos_drift' || mode.startsWith('macos_') || mode.startsWith('ios_')) {
+        } else if (category === 'apple') {
             await initAppleMode(mode, canvas);
-        } else if (['ubuntu', 'chromeos', 'matrix', 'dvd', 'flip_clock', 'quotes'].includes(mode)) {
+        } else if (category === 'misc') {
             await initMiscMode(mode, canvas);
-        } else if (['broken_screen', 'white_noise', 'radar', 'hacker', 'no_signal'].includes(mode)) {
+        } else if (category === 'pranks') {
             await initPrankMode(mode, canvas);
-        } else if (mode.startsWith('win_')) {
+        } else if (category === 'windows') {
             await initWindowsMode(mode, canvas);
         }
-        
-        // Only proceed if this is still the current initialization
-        if (token !== initToken) {
-            // Another initialization started, ignore this one
-            return;
-        }
+
+        if (token !== initToken) return;
     } catch (error) {
         console.error('Error initializing mode:', error);
-        // Only log if this is still the current initialization
         if (token === initToken) {
             console.warn(`Mode initialization failed for ${mode}, continuing with previous state`);
         }
     }
-    
-    // Other modes don't need initialization
 }
 
 export function animate() {
@@ -91,20 +78,19 @@ export function animate() {
         ctx.textAlign = 'left';
         
         const mode = state.getCurrentMode();
-        
-        // Route to appropriate mode renderer
-        if (isGamesMode(mode)) {
-            // Games handle their own rendering, but we still call this for consistency
-            renderGamesMode(mode, ctx, canvas);
-        } else if (mode === 'color') {
+        const category = getCategoryForMode(mode);
+
+        if (mode === 'color') {
             renderColorMode(ctx, canvas);
-        } else if (mode.startsWith('win_')) {
+        } else if (category === 'games') {
+            renderGamesMode(mode, ctx, canvas);
+        } else if (category === 'windows') {
             renderWindowsMode(mode, ctx, canvas);
-        } else if (mode.startsWith('macos_') || mode.startsWith('ios_')) {
+        } else if (category === 'apple') {
             renderAppleMode(mode, ctx, canvas);
-        } else if (['broken_screen', 'white_noise', 'radar', 'hacker', 'no_signal'].includes(mode)) {
+        } else if (category === 'pranks') {
             renderPrankMode(mode, ctx, canvas);
-        } else {
+        } else if (category === 'misc') {
             renderMiscMode(mode, ctx, canvas);
         }
     } catch (error) {
@@ -143,7 +129,7 @@ export async function setMode(mode, val, el) {
     
     // Also update mobile menu buttons if they exist
     if (mode !== 'color') {
-        const mobileBtn = document.querySelector(`.mobile-option-btn[onclick*="${mode}"]`);
+        const mobileBtn = document.querySelector(`.mobile-option-btn[data-mode="${mode}"]`);
         if (mobileBtn) {
             mobileBtn.classList.add('active');
         }

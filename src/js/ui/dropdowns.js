@@ -1,9 +1,5 @@
-// Dropdown handling logic
+// Dropdown handling logic – click only (no hover)
 
-import { getIsTouchDevice } from '../core/canvas.js';
-import { closeMobileMenu } from './mobile-menu.js';
-
-const isTouchDevice = getIsTouchDevice();
 let abortController = null;
 const hideTimeouts = new Map(); // Track all hide timeouts for cleanup
 const openDropdowns = new Map(); // Track which dropdowns are open
@@ -35,22 +31,7 @@ export function initDropdowns() {
             openDropdowns.set(dropdown, true);
         }
 
-        function hideDropdown() {
-            const timeout = setTimeout(() => {
-                content.classList.remove('show');
-                openDropdowns.delete(dropdown);
-                hideTimeouts.delete(dropdown);
-            }, 150);
-            hideTimeouts.set(dropdown, timeout);
-        }
-
-        // Mouse events for desktop
-        if (!isTouchDevice) {
-            dropdown.addEventListener('mouseenter', showDropdown, { signal });
-            dropdown.addEventListener('mouseleave', hideDropdown, { signal });
-        }
-
-        // Touch/Click events for mobile
+        // Click to toggle (desktop and mobile) – no hover
         dropBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             const isOpen = openDropdowns.has(dropdown);
@@ -72,38 +53,36 @@ export function initDropdowns() {
             }
         }, { signal });
 
-        // Prevent dropdown from closing when clicking inside it
+        // Stop propagation so document listener doesn’t close when clicking inside
         content.addEventListener('click', (e) => {
             e.stopPropagation();
+            // Close dropdown when a menu item (button) is clicked
+            if (e.target.closest('button')) {
+                content.classList.remove('show');
+                openDropdowns.delete(dropdown);
+            }
         }, { signal });
     });
 
-    // Close dropdowns when clicking outside (single global handler)
-    if (isTouchDevice) {
-        document.addEventListener('click', (e) => {
-            // Don't close if clicking on mobile menu elements
-            if (e.target.closest('#mobileMenu') || e.target.closest('#mobileMenuBtn')) {
-                return;
-            }
-            
-            let clickedInsideDropdown = false;
+    // Close dropdowns when clicking outside – use capture so we run before other handlers
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('#mobileMenu') || e.target.closest('.mobile-menu-btn')) {
+            return;
+        }
+        let inside = false;
+        dropdowns.forEach(dropdown => {
+            if (dropdown.contains(e.target)) inside = true;
+        });
+        if (!inside) {
             dropdowns.forEach(dropdown => {
-                if (dropdown.contains(e.target)) {
-                    clickedInsideDropdown = true;
+                const content = dropdown.querySelector('.dropdown-content');
+                if (content) {
+                    content.classList.remove('show');
+                    openDropdowns.delete(dropdown);
                 }
             });
-            
-            if (!clickedInsideDropdown) {
-                dropdowns.forEach(dropdown => {
-                    const content = dropdown.querySelector('.dropdown-content');
-                    if (content) {
-                        content.classList.remove('show');
-                        openDropdowns.delete(dropdown);
-                    }
-                });
-            }
-        }, { signal });
-    }
+        }
+    }, { capture: true, signal });
 }
 
 export function cleanupDropdowns() {

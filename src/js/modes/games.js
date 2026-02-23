@@ -1,6 +1,7 @@
 // Games modes
 
 import { getCanvas } from '../core/canvas.js';
+import { getCategoryForMode } from '../config/mode-registry.js';
 import { loadTemplate } from '../utils/template-loader.js';
 
 const canvas = getCanvas();
@@ -614,11 +615,11 @@ export function cleanupGame() {
 }
 
 /**
- * Check if a mode is a games mode
+ * Check if a mode is a games mode (registry-based)
  * @param {string} mode - The mode name
  * @returns {boolean} True if the mode is a games mode
  */
 export function isGamesMode(mode) {
-    return mode === 'tetris' || mode === 'snake' || mode === 'pacman' || mode === 'mario' || mode === 'flap' || mode === 'neon_vector' || mode === 'neon_boids' || mode === 'neon_ecosystem' || mode === 'chess' || mode === 'circular_maze' || mode === 'maze' || mode.startsWith('game_');
+    return getCategoryForMode(mode) === 'games';
 }
 

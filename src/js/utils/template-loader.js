@@ -1,95 +1,60 @@
 // Template loader utility - loads and parses HTML templates
 
+import { getTemplatePath, isRawHtmlMode } from '../config/mode-registry.js';
+
 const templateCache = new Map();
 const MAX_CACHE_SIZE = 50; // Maximum number of templates to cache
 const accessOrder = []; // Track access order for LRU eviction
 
 /**
  * Loads and parses an HTML template for a given mode
- * @param {string} modeName - The mode name (e.g., 'win_10_upd', 'macos_hello')
- * @returns {Promise<Object>} Parsed template object
+ * @param {string} modeName - The mode name (e.g., 'win_10_bsod_enhanced', 'macos_hello')
+ * @returns {Promise<Object|null>} Parsed template object or raw HTML wrapper; null if no template
  */
 export async function loadTemplate(modeName) {
     if (!modeName) return null;
-    
+
     // Check cache first
     if (templateCache.has(modeName)) {
-        // Update access order (move to end)
         const index = accessOrder.indexOf(modeName);
-        if (index > -1) {
-            accessOrder.splice(index, 1);
-        }
+        if (index > -1) accessOrder.splice(index, 1);
         accessOrder.push(modeName);
         return templateCache.get(modeName);
     }
 
-    // Determine template path based on mode name
-    let templatePath;
-    if (modeName.startsWith('win_')) {
-        templatePath = `src/templates/windows/${modeName}.html`;
-    } else if (modeName.startsWith('macos_') || modeName.startsWith('ios_')) {
-        templatePath = `src/templates/apple/${modeName}.html`;
-    } else if (['broken_screen', 'white_noise', 'radar', 'hacker', 'no_signal'].includes(modeName)) {
-        templatePath = `src/templates/pranks/${modeName}.html`;
-    } else if (modeName === 'tetris' || modeName === 'snake' || modeName === 'mario' || modeName === 'flap' || modeName === 'neon_vector' || modeName === 'neon_boids' || modeName === 'chess' || modeName === 'circular_maze' || modeName.startsWith('game_')) {
-        templatePath = `src/templates/games/${modeName}.html`;
-    } else {
-        templatePath = `src/templates/misc/${modeName}.html`;
-    }
+    const templatePath = getTemplatePath(modeName);
+    if (!templatePath) return null;
 
-    // Modes that don't use templates (drawn directly with Canvas)
-    const modesWithoutTemplates = ['win_xp_upd'];
-    if (modesWithoutTemplates.includes(modeName)) {
-        return null;
-    }
-    
     try {
         const response = await fetch(templatePath);
         if (!response.ok) {
-            // Template doesn't exist - return null (mode will use pure Canvas rendering)
-            // Don't log 404 errors as they're expected for modes without templates
             if (response.status !== 404) {
                 console.warn(`Failed to load template for ${modeName}: HTTP ${response.status}`);
             }
             return null;
         }
         const htmlString = await response.text();
-        
-        // Games templates and win_ransomware are full HTML pages, return raw HTML
-        if (modeName === 'tetris' || modeName === 'snake' || modeName === 'mario' || modeName === 'flap' || modeName === 'neon_vector' || modeName === 'neon_boids' || modeName === 'chess' || modeName === 'circular_maze' || modeName === 'win_ransomware' || modeName.startsWith('game_')) {
+
+        if (isRawHtmlMode(modeName)) {
             const gameTemplate = { html: htmlString, type: 'game' };
-            
-            // Enforce cache size limit (LRU eviction)
             if (templateCache.size >= MAX_CACHE_SIZE) {
-                // Remove least recently used entry
                 const lruKey = accessOrder.shift();
-                if (lruKey) {
-                    templateCache.delete(lruKey);
-                }
+                if (lruKey) templateCache.delete(lruKey);
             }
-            
             templateCache.set(modeName, gameTemplate);
             accessOrder.push(modeName);
             return gameTemplate;
         }
-        
-        // Other templates are parsed
+
         const parsed = parseTemplate(htmlString);
-        
-        // Enforce cache size limit (LRU eviction)
         if (templateCache.size >= MAX_CACHE_SIZE) {
-            // Remove least recently used entry
             const lruKey = accessOrder.shift();
-            if (lruKey) {
-                templateCache.delete(lruKey);
-            }
+            if (lruKey) templateCache.delete(lruKey);
         }
-        
         templateCache.set(modeName, parsed);
         accessOrder.push(modeName);
         return parsed;
     } catch (error) {
-        // Only log non-network errors (404s are expected and handled above)
         if (error.name !== 'TypeError' || !error.message.includes('fetch')) {
             console.warn(`Failed to load template for ${modeName}:`, error);
         }
