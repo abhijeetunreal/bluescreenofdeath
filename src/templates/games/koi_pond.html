@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procedural Koi Pond</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #00151f; /* Deep dark blue water */
+            font-family: sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 15, 25, 0.85);
+            backdrop-filter: blur(4px);
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 13px;
+            width: 220px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            max-height: 90vh;
+            overflow-y: auto;
+            
+            /* Hidden by default */
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none; /* Clicks pass through when hidden */
+        }
+
+        /* Show when hovering over the body/canvas */
+        body:hover #ui {
+            opacity: 1;
+            pointer-events: auto; /* Re-enable clicks when visible */
+        }
+
+        .control-group { margin-bottom: 12px; }
+        .control-group:last-child { margin-bottom: 0; }
+        label { display: flex; justify-content: space-between; margin-bottom: 4px; color: #81c3d7; font-weight: 600; }
+        input[type=range] { 
+            width: 100%; 
+            cursor: pointer; 
+            accent-color: #ff9800;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            -webkit-appearance: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background: #ff9800;
+            margin-top: -4px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 6px;
+            border-radius: 3px;
+        }
+        select {
+            width: 100%;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 3px;
+            padding: 4px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        option {
+            background: #00151f;
+            color: white;
+        }
+        hr {
+            border: 0;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin: 12px 0;
+        }
+        .header {
+            color: #ff9800;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <div class="header">Simulation</div>
+        <div class="control-group">
+            <label>Fish Count: <span id="val-count">7</span></label>
+            <input type="range" id="param-count" min="1" max="100" value="7">
+        </div>
+        <div class="control-group">
+            <label>Speed: <span id="val-speed">0.9</span></label>
+            <input type="range" id="param-speed" min="0.5" max="8.0" step="0.1" value="0.9">
+        </div>
+        <div class="control-group">
+            <label>Wiggle Speed: <span id="val-wiggle">0.2</span></label>
+            <input type="range" id="param-wiggle" min="0.0" max="5.0" step="0.1" value="0.2">
+        </div>
+
+        <hr>
+        <div class="header">Appearance</div>
+        
+        <div class="control-group">
+            <label>Body Width: <span id="val-width">0.4</span></label>
+            <input type="range" id="param-width" min="0.1" max="2.0" step="0.01" value="0.4">
+        </div>
+        <div class="control-group">
+            <label>Spot Size: <span id="val-spotSize">0.7</span></label>
+            <input type="range" id="param-spotSize" min="0.0" max="3.0" step="0.1" value="0.7">
+        </div>
+        <div class="control-group">
+            <label>Pattern Type</label>
+            <select id="param-pattern">
+                <option value="Random">Random Mix</option>
+                <option value="Kohaku">Kohaku (Red/White)</option>
+                <option value="Sanke">Sanke (Tri-color)</option>
+                <option value="Showa">Showa (Black Base)</option>
+                <option value="Ogon">Ogon (Solid Gold)</option>
+                <option value="Orenji">Orenji (Solid Orange)</option>
+                <option value="Utsuri">Utsuri (Black/Yellow)</option>
+            </select>
+        </div>
+    </div>
+
+    <canvas id="pond"></canvas>
+
+    <script>
+        /**
+         * ==========================================
+         * CONFIGURATION
+         * ==========================================
+         */
+        const params = {
+            count: 7,
+            speed: 0.9,
+            separation: 70,
+            force: 0.05,
+            wiggle: 0.2,
+            bodyWidth: 0.4,
+            spotSize: 0.7,
+            pattern: 'Random'
+        };
+
+        /**
+         * ==========================================
+         * MATH & PHYSICS UTILS
+         * ==========================================
+         */
+        const PI = Math.PI;
+        const TWO_PI = Math.PI * 2;
+        const HALF_PI = Math.PI / 2;
+
+        class PVector {
+            constructor(x, y) { this.x = x; this.y = y; }
+            copy() { return new PVector(this.x, this.y); }
+            add(v) { this.x += v.x; this.y += v.y; return this; }
+            static add(v1, v2) { return new PVector(v1.x + v2.x, v1.y + v2.y); }
+            sub(v) { this.x -= v.x; this.y -= v.y; return this; }
+            static sub(v1, v2) { return new PVector(v1.x - v2.x, v1.y - v2.y); }
+            mult(n) { this.x *= n; this.y *= n; return this; }
+            div(n) { this.x /= n; this.y /= n; return this; }
+            mag() { return Math.sqrt(this.x * this.x + this.y * this.y); }
+            setMag(len) { this.normalize(); this.mult(len); return this; }
+            normalize() { const m = this.mag(); if (m !== 0 && m !== 1) this.div(m); return this; }
+            heading() { return Math.atan2(this.y, this.x); }
+            limit(max) { if (this.mag() > max) this.setMag(max); return this; }
+            static dist(v1, v2) { const dx = v1.x - v2.x; const dy = v1.y - v2.y; return Math.sqrt(dx * dx + dy * dy); }
+            static fromAngle(angle) { return new PVector(Math.cos(angle), Math.sin(angle)); }
+        }
+
+        function constrainAngle(angle, anchor, constraint) {
+            if (Math.abs(relativeAngleDiff(angle, anchor)) <= constraint) return simplifyAngle(angle);
+            if (relativeAngleDiff(angle, anchor) > constraint) return simplifyAngle(anchor - constraint);
+            return simplifyAngle(anchor + constraint);
+        }
+
+        function relativeAngleDiff(angle, anchor) {
+            angle = simplifyAngle(angle + PI - anchor);
+            anchor = PI;
+            return anchor - angle;
+        }
+
+        function simplifyAngle(angle) {
+            while (angle >= TWO_PI) angle -= TWO_PI;
+            while (angle < 0) angle += TWO_PI;
+            return angle;
+        }
+
+        function rand(min, max) { return Math.random() * (max - min) + min; }
+        function lerp(start, end, amt) { return (1 - amt) * start + amt * end; }
+        
+        // Helper to convert Hex to RGBA for blending spots
+        function hexToRgba(hex, alpha) {
+            // Ensure hex has a hash
+            const h = hex.startsWith('#') ? hex.slice(1) : hex;
+            const bigint = parseInt(h, 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        /**
+         * ==========================================
+         * PROCESSING RENDERER SHIM
+         * ==========================================
+         */
+        let shapeVertices = [];
+        
+        function beginShape() { shapeVertices = []; }
+        function vertex(x, y) { shapeVertices.push({ x, y, type: 'vertex' }); }
+        function curveVertex(x, y) { shapeVertices.push({ x, y, type: 'curve' }); }
+        function bezierVertex(cx1, cy1, cx2, cy2, x, y) { shapeVertices.push({ cx1, cy1, cx2, cy2, x, y, type: 'bezier' }); }
+        
+        function endShape(ctx, fillStyle, patternCallback) {
+            if (shapeVertices.length === 0) return;
+            ctx.beginPath();
+            
+            let isSpline = shapeVertices.some(v => v.type === 'curve');
+
+            if (isSpline && shapeVertices.length >= 4) {
+                 ctx.moveTo(shapeVertices[1].x, shapeVertices[1].y);
+                 for (let i = 1; i < shapeVertices.length - 2; i++) {
+                     let p0 = shapeVertices[i - 1];
+                     let p1 = shapeVertices[i];
+                     let p2 = shapeVertices[i + 1];
+                     let p3 = shapeVertices[i + 2];
+                     
+                     let cp1x = p1.x + (p2.x - p0.x) / 6;
+                     let cp1y = p1.y + (p2.y - p0.y) / 6;
+                     let cp2x = p2.x - (p3.x - p1.x) / 6;
+                     let cp2y = p2.y - (p3.y - p1.y) / 6;
+                     
+                     ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+                 }
+            } else {
+                ctx.moveTo(shapeVertices[0].x, shapeVertices[0].y);
+                for (let i = 1; i < shapeVertices.length; i++) {
+                    let v = shapeVertices[i];
+                    if (v.type === 'bezier') {
+                        ctx.bezierCurveTo(v.cx1, v.cy1, v.cx2, v.cy2, v.x, v.y);
+                    } else {
+                        ctx.lineTo(v.x, v.y);
+                    }
+                }
+            }
+            
+            ctx.closePath();
+            
+            // Main Fill
+            if (fillStyle) {
+                ctx.fillStyle = fillStyle;
+                ctx.fill();
+            }
+
+            // Render Patterns (Spots) clipped to the fish body
+            if (patternCallback) {
+                ctx.save();
+                ctx.clip(); 
+                patternCallback();
+                ctx.restore();
+            }
+        }
+
+        /**
+         * ==========================================
+         * KINEMATICS
+         * ==========================================
+         */
+        class Chain {
+            constructor(origin, jointCount, linkSize, angleConstraint = TWO_PI, trailAngle = 0) {
+                this.linkSize = linkSize;
+                this.angleConstraint = angleConstraint;
+                this.joints = [];
+                this.angles = [];
+                
+                this.joints.push(origin.copy());
+                this.angles.push(simplifyAngle(trailAngle + PI));
+
+                let offset = PVector.fromAngle(trailAngle).mult(this.linkSize);
+
+                for (let i = 1; i < jointCount; i++) {
+                    this.joints.push(PVector.add(this.joints[i - 1], offset));
+                    this.angles.push(simplifyAngle(trailAngle + PI));
+                }
+            }
+
+            resolve(pos) {
+                this.joints[0] = pos.copy();
+                for (let i = 1; i < this.joints.length; i++) {
+                    let diff = PVector.sub(this.joints[i - 1], this.joints[i]);
+                    let curAngle = diff.heading();
+                    this.angles[i] = constrainAngle(curAngle, this.angles[i - 1], this.angleConstraint);
+                    let offset = PVector.fromAngle(this.angles[i]).setMag(this.linkSize);
+                    this.joints[i] = PVector.sub(this.joints[i - 1], offset);
+                }
+            }
+        }
+
+        /**
+         * ==========================================
+         * KOI FISH LOGIC
+         * ==========================================
+         */
+        class Koi {
+            constructor(x, y) {
+                this.pos = new PVector(x, y);
+                this.vel = PVector.fromAngle(rand(0, TWO_PI));
+                this.acc = new PVector(0, 0); 
+                
+                this.scale = rand(0.6, 0.9);
+                
+                let trailAngle = this.vel.heading() + PI;
+                this.spine = new Chain(this.pos, 12, 16 * this.scale, PI / 6, trailAngle); 
+                
+                this.baseWidths = [68, 81, 84, 83, 77, 64, 51, 38, 32, 19];
+
+                // Colors & Patterns
+                this.setupPattern();
+                this.finColor = 'rgba(255, 255, 255, 0.4)';
+                
+                this.swimPhase = rand(0, TWO_PI);
+                this.noiseOffset = rand(0, 1000); 
+            }
+
+            setupPattern() {
+                this.spots = []; // Clear previous spots
+                let pType = params.pattern;
+
+                if (pType === 'Random') {
+                    const rnd = Math.random();
+                    if (rnd < 0.3) pType = 'Kohaku';
+                    else if (rnd < 0.5) pType = 'Sanke';
+                    else if (rnd < 0.7) pType = 'Showa';
+                    else if (rnd < 0.8) pType = 'Utsuri';
+                    else if (rnd < 0.9) pType = 'Ogon';
+                    else pType = 'Orenji';
+                }
+
+                // Default Base Colors
+                this.baseColor = '#f0f0f0'; // White base default
+                
+                if (pType === 'Kohaku') {
+                    this.baseColor = '#f2f2f2';
+                    this.generateSpots('#FF4500', 3, 5); // Red/Orange
+                } else if (pType === 'Sanke') {
+                    this.baseColor = '#f5f5f5';
+                    this.generateSpots('#FF3300', 2, 4); // Red
+                    this.generateSpots('#222222', 1, 3, 0.6); // Small Black
+                } else if (pType === 'Showa') {
+                    this.baseColor = '#222222'; // Black base
+                    this.generateSpots('#FF3300', 3, 5); // Red
+                    this.generateSpots('#FFFFFF', 2, 4); // White
+                } else if (pType === 'Utsuri') {
+                    this.baseColor = '#111111'; // Black base
+                    this.generateSpots('#FFD700', 3, 6); // Yellow/Gold
+                } else if (pType === 'Ogon') {
+                    this.baseColor = '#FFD700'; // Gold
+                } else if (pType === 'Orenji') {
+                    this.baseColor = '#FF8C00'; // Orange
+                }
+            }
+
+            generateSpots(color, minCount, maxCount, sizeMult = 1.0) {
+                const count = Math.floor(rand(minCount, maxCount));
+                for(let i=0; i<count; i++) {
+                    this.spots.push({
+                        segment: rand(1, 9), 
+                        offsetY: rand(-0.5, 0.5), 
+                        size: rand(0.8, 1.5) * sizeMult, 
+                        color: color
+                    });
+                }
+            }
+
+            applyForce(force) {
+                this.acc.add(force);
+            }
+
+            separate(fishes) {
+                let desiredSeparation = params.separation * this.scale;
+                let sum = new PVector(0, 0);
+                let count = 0;
+
+                for (let other of fishes) {
+                    let d = PVector.dist(this.pos, other.pos);
+                    if ((d > 0) && (d < desiredSeparation)) {
+                        let diff = PVector.sub(this.pos, other.pos);
+                        diff.normalize();
+                        diff.div(d);
+                        sum.add(diff);
+                        count++;
+                    }
+                }
+
+                if (count > 0) {
+                    sum.div(count);
+                    sum.normalize();
+                    sum.mult(params.speed);
+                    let steer = PVector.sub(sum, this.vel);
+                    steer.limit(params.force * 2);
+                    this.applyForce(steer);
+                }
+            }
+
+            wander() {
+                this.noiseOffset += 0.01;
+                let angleChange = (Math.sin(this.noiseOffset) * 0.5); 
+                
+                let circleCenter = this.vel.copy();
+                circleCenter.normalize();
+                circleCenter.mult(60); 
+                
+                let displacement = PVector.fromAngle(this.vel.heading() + angleChange);
+                displacement.mult(20);
+
+                let wanderForce = PVector.add(circleCenter, displacement);
+                wanderForce.limit(params.force);
+                this.applyForce(wanderForce);
+            }
+
+            boundaries() {
+                const margin = 100;
+                let desired = null;
+
+                if (this.pos.x < margin) desired = new PVector(params.speed, this.vel.y);
+                else if (this.pos.x > width - margin) desired = new PVector(-params.speed, this.vel.y);
+
+                if (this.pos.y < margin) desired = new PVector(this.vel.x, params.speed);
+                else if (this.pos.y > height - margin) desired = new PVector(this.vel.x, -params.speed);
+
+                if (desired !== null) {
+                    desired.normalize();
+                    desired.mult(params.speed);
+                    let steer = PVector.sub(desired, this.vel);
+                    steer.limit(params.force * 1.5); 
+                    this.applyForce(steer);
+                }
+            }
+
+            update(allFish) {
+                this.separate(allFish);
+                this.wander();
+                this.boundaries();
+
+                this.vel.add(this.acc);
+                this.vel.limit(params.speed);
+                this.pos.add(this.vel);
+                this.acc.mult(0);
+
+                this.spine.angles[0] = this.vel.heading();
+                this.spine.resolve(this.pos);
+
+                this.swimPhase += (0.15 + (this.vel.mag() * 0.05)) * params.wiggle;
+            }
+
+            getDynamicWidth(i) {
+                const baseW = this.baseWidths[i] !== undefined ? this.baseWidths[i] : 10;
+                return baseW * this.scale * 0.6 * params.bodyWidth;
+            }
+
+            display(ctx) {
+                const j = this.spine.joints;
+                const a = this.spine.angles;
+                
+                const getP = (i, angOff, lenOff) => {
+                    const w = this.getDynamicWidth(i);
+                    const wiggleMag = (i * 2.0 * this.scale); 
+                    const wiggle = Math.sin(this.swimPhase - i * 0.5) * wiggleMag;
+                    
+                    const px = Math.cos(a[i] + HALF_PI) * wiggle;
+                    const py = Math.sin(a[i] + HALF_PI) * wiggle;
+                    
+                    const baseX = j[i].x + px;
+                    const baseY = j[i].y + py;
+
+                    return {
+                        x: baseX + Math.cos(a[i] + angOff) * (w + lenOff),
+                        y: baseY + Math.sin(a[i] + angOff) * (w + lenOff)
+                    };
+                };
+
+                // Shadow
+                ctx.save();
+                ctx.translate(20, 20);
+                this.drawBodyAndFins(ctx, 'rgba(0,0,0,0.2)', true, getP, j, a);
+                ctx.restore();
+
+                // Fish
+                this.drawBodyAndFins(ctx, this.baseColor, false, getP, j, a);
+            }
+
+            drawBodyAndFins(ctx, color, isShadow, getP, j, a) {
+                // FINS
+                const drawSingleFin = (idx, angleOffset, rot, len, wid) => {
+                     const wiggleMag = (idx * 2.0 * this.scale);
+                     const wiggle = Math.sin(this.swimPhase - idx * 0.5) * wiggleMag;
+                     const px = Math.cos(a[idx] + HALF_PI) * wiggle;
+                     const py = Math.sin(a[idx] + HALF_PI) * wiggle;
+                     const w = this.getDynamicWidth(idx) * 0.8;
+                     const bx = j[idx].x + px + Math.cos(a[idx] + angleOffset) * w;
+                     const by = j[idx].y + py + Math.sin(a[idx] + angleOffset) * w;
+
+                     ctx.save();
+                     ctx.translate(bx, by);
+                     ctx.rotate(rot);
+                     ctx.beginPath();
+                     ctx.ellipse(0, 0, len, wid, 0, 0, TWO_PI);
+                     ctx.fillStyle = isShadow ? 'rgba(0,0,0,0)' : this.finColor;
+                     ctx.fill();
+                     ctx.restore();
+                }
+
+                drawSingleFin(3, PI/3, a[2] - PI/4, 40 * this.scale, 16 * this.scale);
+                drawSingleFin(3, -PI/3, a[2] + PI/4, 40 * this.scale, 16 * this.scale);
+                drawSingleFin(7, PI/2, a[6] - PI/4, 24 * this.scale, 8 * this.scale);
+                drawSingleFin(7, -PI/2, a[6] + PI/4, 24 * this.scale, 8 * this.scale);
+
+                // BODY CONSTRUCTION
+                // 1. Build shape array
+                beginShape();
+                for (let i = 8; i < 12; i++) { // Tail Right
+                   let w = (i - 8) * (i - 8) * 2.5 * this.scale * params.bodyWidth;
+                   let p = getP(i, -PI/2, w); 
+                   curveVertex(p.x, p.y);
+                }
+                for (let i = 11; i >= 8; i--) { // Tail Left
+                   let w = (i - 8) * (i - 8) * 2.5 * this.scale * params.bodyWidth;
+                   let p = getP(i, PI/2, w);
+                   curveVertex(p.x, p.y);
+                }
+                endShape(ctx, isShadow ? color : this.finColor);
+
+                beginShape();
+                for (let i = 0; i < 10; i++) { // Body Right
+                    let p = getP(i, PI/2, 0);
+                    curveVertex(p.x, p.y);
+                }
+                let pTail = getP(9, PI, 0);
+                curveVertex(pTail.x, pTail.y);
+                for (let i = 9; i >= 0; i--) { // Body Left
+                    let p = getP(i, -PI/2, 0);
+                    curveVertex(p.x, p.y);
+                }
+                let pHeadR = getP(0, -PI/6, 0); // Head
+                let pHeadTip = getP(0, 0, 4 * this.scale);
+                let pHeadL = getP(0, PI/6, 0);
+                curveVertex(pHeadR.x, pHeadR.y);
+                curveVertex(pHeadTip.x, pHeadTip.y);
+                curveVertex(pHeadL.x, pHeadL.y);
+                let pStart = getP(0, PI/2, 0); // Close
+                let pStart2 = getP(1, PI/2, 0);
+                curveVertex(pStart.x, pStart.y);
+                curveVertex(pStart2.x, pStart2.y);
+
+                // 2. Render Body + Spots
+                const renderSpots = () => {
+                    if (isShadow) return;
+
+                    // Draw spots if they exist
+                    if (this.spots) {
+                        this.spots.forEach(spot => {
+                            const idx = spot.segment;
+                            const iFloor = Math.floor(idx);
+                            const t = idx - iFloor;
+
+                            const getPosAt = (k) => {
+                                const wiggleMag = (k * 2.0 * this.scale);
+                                const wiggle = Math.sin(this.swimPhase - k * 0.5) * wiggleMag;
+                                return {
+                                    x: j[k].x + Math.cos(a[k] + HALF_PI) * wiggle,
+                                    y: j[k].y + Math.sin(a[k] + HALF_PI) * wiggle,
+                                    w: this.getDynamicWidth(k)
+                                };
+                            };
+
+                            const p1 = getPosAt(iFloor);
+                            const p2 = getPosAt(Math.min(iFloor + 1, 11));
+
+                            const x = lerp(p1.x, p2.x, t);
+                            const y = lerp(p1.y, p2.y, t);
+                            const widthAtSeg = lerp(p1.w, p2.w, t);
+                            
+                            // Offset spot from center based on spine rotation
+                            const ang = a[iFloor]; 
+                            const perpX = Math.cos(ang + HALF_PI) * spot.offsetY * widthAtSeg;
+                            const perpY = Math.sin(ang + HALF_PI) * spot.offsetY * widthAtSeg;
+
+                            // BLENDING LOGIC: Use Radial Gradient for Soft Edges
+                            const radius = widthAtSeg * spot.size * params.spotSize;
+                            const cx = x + perpX;
+                            const cy = y + perpY;
+
+                            const grad = ctx.createRadialGradient(cx, cy, radius * 0.3, cx, cy, radius);
+                            grad.addColorStop(0, hexToRgba(spot.color, 0.95)); // Nearly opaque center
+                            grad.addColorStop(0.6, hexToRgba(spot.color, 0.7)); // Fade starts
+                            grad.addColorStop(1, hexToRgba(spot.color, 0.0)); // Transparent edge
+
+                            ctx.beginPath();
+                            ctx.arc(cx, cy, radius, 0, TWO_PI);
+                            ctx.fillStyle = grad;
+                            ctx.fill();
+                        });
+                    }
+                };
+
+                endShape(ctx, color, renderSpots);
+
+                if (!isShadow) {
+                    // Dorsal Fin
+                    beginShape();
+                    vertex(j[4].x, j[4].y);
+                    bezierVertex(j[5].x, j[5].y, j[6].x, j[6].y, j[7].x, j[7].y);
+                    let cp2x = j[5].x + Math.cos(a[5]+HALF_PI) * 15 * this.scale;
+                    let cp2y = j[5].y + Math.sin(a[5]+HALF_PI) * 15 * this.scale;
+                    bezierVertex(j[7].x, j[7].y, cp2x, cp2y, j[4].x, j[4].y); 
+                    endShape(ctx, this.finColor);
+
+                    // Eyes
+                    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+                    let eyeR = getP(0, PI/2, -6 * this.scale);
+                    let eyeL = getP(0, -PI/2, -6 * this.scale);
+                    let eyeSize = 5 * this.scale;
+                    ctx.beginPath(); ctx.arc(eyeR.x, eyeR.y, eyeSize, 0, TWO_PI); ctx.fill();
+                    ctx.beginPath(); ctx.arc(eyeL.x, eyeL.y, eyeSize, 0, TWO_PI); ctx.fill();
+                    ctx.fillStyle = 'black';
+                    ctx.beginPath(); ctx.arc(eyeR.x, eyeR.y, eyeSize * 0.5, 0, TWO_PI); ctx.fill();
+                    ctx.beginPath(); ctx.arc(eyeL.x, eyeL.y, eyeSize * 0.5, 0, TWO_PI); ctx.fill();
+                }
+            }
+        }
+
+        /**
+         * ==========================================
+         * MAIN APP
+         * ==========================================
+         */
+        const canvas = document.getElementById('pond');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let fishArray = [];
+
+        function spawnFish(targetCount) {
+            const currentCount = fishArray.length;
+            if (targetCount > currentCount) {
+                const safeW = Math.max(width, 200);
+                const safeH = Math.max(height, 200);
+                for (let i = 0; i < targetCount - currentCount; i++) {
+                    fishArray.push(new Koi(rand(100, safeW - 100), rand(100, safeH - 100)));
+                }
+            } else if (targetCount < currentCount) {
+                fishArray.splice(targetCount);
+            }
+        }
+
+        function init() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            spawnFish(params.count);
+        }
+
+        let animationStarted = false;
+
+        function animate() {
+            if (!width || !height) {
+                requestAnimationFrame(animate);
+                return;
+            }
+            ctx.clearRect(0, 0, width, height);
+
+            const g = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width);
+            g.addColorStop(0, '#002535'); 
+            g.addColorStop(1, '#001018');
+            ctx.fillStyle = g; 
+            ctx.fillRect(0,0,width,height);
+
+            fishArray.forEach(f => {
+                f.update(fishArray);
+                f.display(ctx);
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        /**
+         * ==========================================
+         * UI EVENT LISTENERS
+         * ==========================================
+         */
+        function setupUI() {
+            const bindParam = (id, key, isInt = false) => {
+                const el = document.getElementById(id);
+                const display = document.getElementById(id.replace('param-', 'val-'));
+                
+                el.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    params[key] = val;
+                    display.innerText = isInt ? Math.round(val) : val.toFixed(2); // Display format
+                    
+                    if(key === 'count') {
+                        spawnFish(Math.round(val));
+                    }
+                });
+            };
+
+            const bindSelect = (id, key) => {
+                 const el = document.getElementById(id);
+                 el.addEventListener('change', (e) => {
+                     params[key] = e.target.value;
+                     // For patterns, we need to regenerate fish looks
+                     if(key === 'pattern') {
+                         fishArray.forEach(f => f.setupPattern());
+                     }
+                 });
+            };
+
+            bindParam('param-count', 'count', true);
+            bindParam('param-speed', 'speed');
+            bindParam('param-spotSize', 'spotSize');
+            bindParam('param-wiggle', 'wiggle');
+            bindParam('param-width', 'bodyWidth');
+            bindSelect('param-pattern', 'pattern');
+        }
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        setupUI();
+
+        function startWhenReady() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            if (w >= 100 && h >= 100) {
+                init();
+                if (!animationStarted) {
+                    animationStarted = true;
+                    animate();
+                }
+                return;
+            }
+            requestAnimationFrame(startWhenReady);
+        }
+        if (document.readyState === 'complete') {
+            startWhenReady();
+        } else {
+            window.addEventListener('load', startWhenReady);
+        }
+    </script>
+</body>
+</html>
