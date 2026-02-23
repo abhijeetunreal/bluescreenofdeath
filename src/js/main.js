@@ -4,6 +4,7 @@ import { getCanvas, resizeCanvas } from './core/canvas.js';
 import { animate, setMode, initMode } from './core/animation.js';
 import { resetUITimer } from './ui/ui-timer.js';
 import { toggleMobileMenu, closeMobileMenu, handleMobileMenuItemClick, initMobileMenuHandlers } from './ui/mobile-menu.js';
+import { buildMenus } from './ui/menu-builder.js';
 import { initDropdowns } from './ui/dropdowns.js';
 import { initEventHandlers, toggleFullscreen } from './events/handlers.js';
 import { initHomeOverlay, showHomeOverlay, showHomePage, showCanvasView } from './ui/home-overlay.js';
@@ -32,7 +33,8 @@ animate();
 // Initialize UI timer
 resetUITimer();
 
-// Initialize dropdowns
+// Build desktop and mobile menus from registry, then init dropdown behavior
+buildMenus();
 initDropdowns();
 
 // Initialize event handlers

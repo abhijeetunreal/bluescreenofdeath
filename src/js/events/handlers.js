@@ -8,7 +8,6 @@ import { setMode, initMode } from '../core/animation.js';
 const canvas = getCanvas();
 const body = getBody();
 const isTouchDevice = getIsTouchDevice();
-let lastMouseY = 0;
 let abortController = null;
 let orientationTimeout = null;
 let lastTapTime = 0;
@@ -102,39 +101,10 @@ export function initEventHandlers() {
         }, 100);
     }, { signal });
     
-    // Mouse move handler
-    window.addEventListener('mousemove', (e) => {
+    // Mouse move – no hover show/hide; UI bar stays visible
+    window.addEventListener('mousemove', () => {
         resetUITimer();
-        lastMouseY = e.clientY;
-        
-        // Show UI when mouse moves near top of screen (within 120px) on desktop/tablet
-        if (!isTouchDevice && body) {
-            if (e.clientY < 120 && body.classList.contains('hide-ui')) {
-                body.classList.add('show-ui-on-hover');
-            } else if (e.clientY > 180) {
-                body.classList.remove('show-ui-on-hover');
-            }
-        }
     }, { signal });
-    
-    // UI container hover handlers (desktop/tablet only)
-    if (!isTouchDevice) {
-        const uiContainer = document.getElementById('ui-container');
-        if (uiContainer) {
-            uiContainer.addEventListener('mouseenter', () => {
-                if (body && body.classList.contains('hide-ui')) {
-                    body.classList.add('show-ui-on-hover');
-                }
-            }, { signal });
-            
-            uiContainer.addEventListener('mouseleave', () => {
-                // Only remove if mouse moves away from top area
-                if (body && lastMouseY > 180) {
-                    body.classList.remove('show-ui-on-hover');
-                }
-            }, { signal });
-        }
-    }
     
     // Consolidated touch handler with double tap detection
     window.addEventListener('touchstart', (e) => {
@@ -189,7 +159,11 @@ export function initEventHandlers() {
             setMode('color', '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'));
         }
         if (e.key === 'Escape') {
-            closeMobileMenu();
+            if (body.classList.contains('ui-bar-hidden')) {
+                body.classList.remove('ui-bar-hidden');
+            } else {
+                closeMobileMenu();
+            }
         }
     }, { signal });
 }
