@@ -3,6 +3,7 @@
 import { getBody } from '../core/canvas.js';
 import { getCategories, getModesForCategory } from '../config/mode-registry.js';
 import { resetUITimer } from './ui-timer.js';
+import { startRandomScreensaver } from './random-screensaver.js';
 
 const body = getBody();
 const STORAGE_KEY = 'bluescreen_home_shown';
@@ -233,6 +234,23 @@ export function initHomeOverlay() {
         });
         // Override onclick
         homeBtn.setAttribute('onclick', 'showHomePage()');
+    }
+
+    // Random screensaver: Start button on home page
+    const randomScreensaverStart = document.getElementById('random-screensaver-start');
+    const randomScreensaverInterval = document.getElementById('random-screensaver-interval');
+    if (randomScreensaverStart && randomScreensaverInterval) {
+        randomScreensaverStart.addEventListener('click', () => {
+            const raw = randomScreensaverInterval.value.trim();
+            const seconds = parseInt(raw, 10);
+            if (isNaN(seconds) || seconds < 1) {
+                randomScreensaverInterval.focus();
+                randomScreensaverInterval.reportValidity?.();
+                return;
+            }
+            startRandomScreensaver(seconds);
+            showCanvasView();
+        });
     }
 }
 

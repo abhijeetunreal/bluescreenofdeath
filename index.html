@@ -65,6 +65,19 @@
             </section>
 
             <section class="py-6 px-4 max-w-3xl mx-auto border-t border-[var(--color-border)]">
+                <h2 class="section-heading mb-3">Random screensaver</h2>
+                <p class="text-sm text-[var(--color-text-muted)] mb-4">Set how often to switch to the next random animation. Then start to cycle through all modes automatically.</p>
+                <div class="card p-4 flex flex-col sm:flex-row gap-3 items-end">
+                    <div class="flex-1 w-full sm:min-w-0">
+                        <label for="random-screensaver-interval" class="block text-xs font-medium text-[var(--color-text-muted)] mb-1">Interval (seconds)</label>
+                        <input type="number" id="random-screensaver-interval" min="1" value="15" class="w-full px-3 py-2 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]" placeholder="e.g. 15">
+                    </div>
+                    <button type="button" id="random-screensaver-start" class="btn-accent px-4 py-2 rounded text-sm font-medium cursor-pointer whitespace-nowrap">Start</button>
+                </div>
+                <p class="text-xs text-[var(--color-text-muted)] mt-2">Stop from the menu when the bar is visible.</p>
+            </section>
+
+            <section class="py-6 px-4 max-w-3xl mx-auto border-t border-[var(--color-border)]">
                 <h2 class="section-heading mb-3">Quick start</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div class="card p-4">

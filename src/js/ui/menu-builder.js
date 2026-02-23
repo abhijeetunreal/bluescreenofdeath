@@ -77,6 +77,20 @@ function createDesktopBar() {
     div2.className = 'divider w-px h-5 bg-[var(--color-border)] mx-1';
     fragment.appendChild(div2);
 
+    const randomScreensaverBtn = document.createElement('button');
+    randomScreensaverBtn.id = 'randomScreensaverBtn';
+    randomScreensaverBtn.className = 'btn-primary px-3 py-1.5 rounded text-sm cursor-pointer min-h-8';
+    randomScreensaverBtn.textContent = 'Random screensaver';
+    randomScreensaverBtn.onclick = () => {
+        if (window.isRandomScreensaverRunning?.()) {
+            window.stopRandomScreensaver?.();
+        } else {
+            window.showHomePage?.();
+        }
+    };
+    randomScreensaverBtn.setAttribute('aria-label', 'Random screensaver');
+    fragment.appendChild(randomScreensaverBtn);
+
     const homeBtn = document.createElement('button');
     homeBtn.id = 'homeBtn';
     homeBtn.className = 'btn-primary px-3 py-1.5 rounded text-sm cursor-pointer min-h-8';
@@ -157,6 +171,20 @@ function createMobileMenuContent() {
         section.appendChild(list);
         fragment.appendChild(section);
     }
+
+    const randomScreensaverMobile = document.createElement('button');
+    randomScreensaverMobile.id = 'randomScreensaverBtnMobile';
+    randomScreensaverMobile.className = 'mobile-option-btn w-full py-2.5 px-3 rounded text-sm text-left mb-3';
+    randomScreensaverMobile.textContent = 'Random screensaver';
+    randomScreensaverMobile.onclick = () => {
+        if (window.isRandomScreensaverRunning?.()) {
+            window.stopRandomScreensaver?.();
+        } else {
+            window.showHomePage?.();
+        }
+        window.closeMobileMenu?.();
+    };
+    fragment.appendChild(randomScreensaverMobile);
 
     const bottomRow = document.createElement('div');
     bottomRow.className = 'flex gap-2 mt-4 mb-2';
