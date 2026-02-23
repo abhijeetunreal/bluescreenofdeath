@@ -133,8 +133,10 @@ export async function initGamesMode(mode, canvas) {
         await loadAndInjectNeonBoids();
     } else if (mode === 'neon_ecosystem') {
         await loadAndInjectNeonEcosystem();
+    } else if (mode === 'koi_pond') {
+        await loadAndInjectKoiPond();
     }
-    
+
     // Show the game container
     gameContainer.style.display = 'block';
 }
@@ -577,6 +579,40 @@ async function loadAndInjectNeonEcosystem() {
     
     gameContainer.appendChild(gameIframe);
     autoStartGame(gameIframe, 'neon_ecosystem');
+}
+
+/**
+ * Load and inject Koi Pond (no start button; runs on load)
+ */
+async function loadAndInjectKoiPond() {
+    if (gameIframe) {
+        gameIframe.remove();
+        gameIframe = null;
+    }
+
+    gameIframe = document.createElement('iframe');
+    gameIframe.id = 'koi-pond-iframe';
+    gameIframe.style.cssText = `
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: #00151f;
+    `;
+    gameIframe.sandbox = 'allow-scripts allow-same-origin allow-forms';
+
+    try {
+        const template = await loadTemplate('koi_pond');
+        if (template && template.html) {
+            gameIframe.srcdoc = template.html;
+        } else {
+            gameIframe.src = 'src/templates/games/koi_pond.html';
+        }
+    } catch (error) {
+        console.warn('Failed to load Koi Pond template, using direct path:', error);
+        gameIframe.src = 'src/templates/games/koi_pond.html';
+    }
+
+    gameContainer.appendChild(gameIframe);
 }
 
 /**
