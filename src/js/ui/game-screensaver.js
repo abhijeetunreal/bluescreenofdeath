@@ -275,6 +275,10 @@ export function startGameScreensaver(intervalSeconds) {
     if (isScreensaverActive) {
         stopGameScreensaver();
     }
+    // Only one screensaver at a time: stop random screensaver if running
+    if (typeof window.stopRandomScreensaver === 'function') {
+        window.stopRandomScreensaver();
+    }
 
     isScreensaverActive = true;
     const intervalMs = intervalSeconds * 1000;

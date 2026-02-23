@@ -9,6 +9,7 @@ import { initDropdowns } from './ui/dropdowns.js';
 import { initEventHandlers, toggleFullscreen } from './events/handlers.js';
 import { initHomeOverlay, showHomeOverlay, showHomePage, showCanvasView } from './ui/home-overlay.js';
 import { initGameScreensaver, toggleGameScreensaver } from './ui/game-screensaver.js';
+import { initRandomScreensaver, stopRandomScreensaver, isRandomScreensaverRunning } from './ui/random-screensaver.js';
 
 // Make functions available globally for HTML onclick handlers
 window.setMode = setMode;
@@ -20,6 +21,8 @@ window.showHomeOverlay = showHomeOverlay;
 window.showHomePage = showHomePage;
 window.showCanvasView = showCanvasView;
 window.toggleGameScreensaver = toggleGameScreensaver;
+window.stopRandomScreensaver = stopRandomScreensaver;
+window.isRandomScreensaverRunning = isRandomScreensaverRunning;
 
 // Initialize canvas
 resizeCanvas();
@@ -45,6 +48,9 @@ initHomeOverlay();
 
 // Initialize game screensaver
 initGameScreensaver();
+
+// Initialize random screensaver
+initRandomScreensaver();
 
 // Initialize mobile menu handlers (fixes double-click issue)
 // Wait for DOM to be ready

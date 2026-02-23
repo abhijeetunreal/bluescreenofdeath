@@ -11,6 +11,7 @@ import { initMiscMode, renderMiscMode, cleanupMiscMode } from '../modes/misc.js'
 import { initGamesMode, renderGamesMode, cleanupGame, isGamesMode } from '../modes/games.js';
 import { resetUITimer } from '../ui/ui-timer.js';
 import { handleModeChange } from '../ui/game-screensaver.js';
+import { handleRandomScreensaverModeChange } from '../ui/random-screensaver.js';
 
 const canvas = getCanvas();
 const ctx = getCtx();
@@ -114,7 +115,8 @@ export async function setMode(mode, val, el) {
     if (val) {
         state.setCurrentColor(val);
     }
-    
+    handleRandomScreensaverModeChange(mode);
+
     // Update UI immediately (don't wait for async init)
     // Remove active class from all buttons and swatches
     const allButtons = document.querySelectorAll('.swatch, .dropdown-content button, .mobile-option-btn, .mobile-swatch');
